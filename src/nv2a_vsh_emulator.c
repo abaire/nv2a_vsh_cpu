@@ -3,6 +3,31 @@
 #include <assert.h>
 #include <string.h>
 
+// clang format off
+static Nv2aVshCpuFunc kDispatchTable[] = {
+    NULL,
+    nv2a_vsh_cpu_mov,
+    nv2a_vsh_cpu_mul,
+    nv2a_vsh_cpu_add,
+    nv2a_vsh_cpu_mad,
+    nv2a_vsh_cpu_dp3,
+    nv2a_vsh_cpu_dph,
+    nv2a_vsh_cpu_dp4,
+    nv2a_vsh_cpu_dst,
+    nv2a_vsh_cpu_min,
+    nv2a_vsh_cpu_max,
+    nv2a_vsh_cpu_slt,
+    nv2a_vsh_cpu_sge,
+    nv2a_vsh_cpu_arl,
+    nv2a_vsh_cpu_rcp,
+    nv2a_vsh_cpu_rcc,
+    nv2a_vsh_cpu_rsq,
+    nv2a_vsh_cpu_exp,
+    nv2a_vsh_cpu_log,
+    nv2a_vsh_cpu_lit,
+};
+// clang format on
+
 static inline void set_register(Nv2aVshRegister *out, const Nv2aVshRegister *in,
                                 const uint8_t *swizzle, bool negate) {
   float mult = negate ? -1.0f : 1.0f;
@@ -48,36 +73,12 @@ static inline void fetch_value(Nv2aVshRegister *out,
 static inline void apply_operation(Nv2aVshExecutionState *state,
                                    const Nv2aVshOperation *op,
                                    const Nv2aVshRegister *inputs) {
-  Nv2aVshRegister output;
-
-  switch (op->opcode) {
-    case NV2AOP_NOP:
-      return;
-
-    case NV2AOP_MOV:
-      nv2a_vsh_cpu_mov(&output, inputs);
-      break;
-
-    case NV2AOP_MUL:
-    case NV2AOP_ADD:
-    case NV2AOP_MAD:
-    case NV2AOP_DP3:
-    case NV2AOP_DPH:
-    case NV2AOP_DP4:
-    case NV2AOP_DST:
-    case NV2AOP_MIN:
-    case NV2AOP_MAX:
-    case NV2AOP_SLT:
-    case NV2AOP_SGE:
-    case NV2AOP_ARL:
-    case NV2AOP_RCP:
-    case NV2AOP_RCC:
-    case NV2AOP_RSQ:
-    case NV2AOP_EXP:
-    case NV2AOP_LOG:
-    case NV2AOP_LIT:
-      break;
+  if (op->opcode == NV2AOP_NOP) {
+    return;
   }
+
+  Nv2aVshRegister result;
+  kDispatchTable[op->opcode](&result, inputs);
 
   const Nv2aVshOutput *out = op->outputs;
   for (uint32_t i = 0; i < 2; ++i, ++out) {
@@ -90,7 +91,7 @@ static inline void apply_operation(Nv2aVshExecutionState *state,
         continue;
 
       case NV2ART_OUTPUT:
-        assert(out->index < 13 && "Invalid output register target.");
+        assert(out->index < 13 && "Invalid result register target.");
         outreg = (Nv2aVshRegister *)(state->output_regs + out->index * 4);
         break;
 
@@ -110,16 +111,16 @@ static inline void apply_operation(Nv2aVshExecutionState *state,
     }
 
     if (out->writemask & NV2AWM_X) {
-      outreg->reg.x = output.reg.x;
+      outreg->reg.x = result.reg.x;
     }
     if (out->writemask & NV2AWM_Y) {
-      outreg->reg.y = output.reg.y;
+      outreg->reg.y = result.reg.y;
     }
     if (out->writemask & NV2AWM_Z) {
-      outreg->reg.z = output.reg.z;
+      outreg->reg.z = result.reg.z;
     }
     if (out->writemask & NV2AWM_W) {
-      outreg->reg.w = output.reg.w;
+      outreg->reg.w = result.reg.w;
     }
   }
 }
