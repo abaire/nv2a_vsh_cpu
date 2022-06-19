@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#define NV2A_MAX_TRANSFORM_PROGRAM_LENGTH 136
+
 #define EXTRACT(token, index, start, size) \
   (token[(index)] >> start) & ~(0xFFFFFFFF << size)
 
@@ -414,12 +416,12 @@ Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out,
 
 Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
                                           const uint32_t *program,
-                                          uint32_t program_size) {
+                                          uint32_t program_slots) {
   if (!out) {
     return NV2AVPR_BAD_OUTPUT;
   }
 
-  if (!program_size || (program_size & 0x03)) {
+  if (!program_slots || program_slots > NV2A_MAX_TRANSFORM_PROGRAM_LENGTH) {
     return NV2AVPR_BAD_PROGRAM_SIZE;
   }
 
@@ -427,13 +429,12 @@ Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
     return NV2AVPR_BAD_PROGRAM;
   }
 
-  uint32_t num_slots = program_size / 4;
-  out->steps = (Nv2aVshStep *)malloc(sizeof(Nv2aVshStep) * num_slots);
+  out->steps = (Nv2aVshStep *)malloc(sizeof(Nv2aVshStep) * program_slots);
 
   Nv2aVshStep *step = out->steps;
   const uint32_t *opcodes = program;
 
-  for (uint32_t i = 0; i < num_slots; ++i, ++step, opcodes += 4) {
+  for (uint32_t i = 0; i < program_slots; ++i, ++step, opcodes += 4) {
     Nv2aVshParseResult result = nv2a_vsh_parse_step(step, opcodes);
     if (result != NV2AVPR_SUCCESS) {
       nv2a_vsh_program_destroy(out);

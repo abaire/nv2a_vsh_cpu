@@ -144,13 +144,13 @@ Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out, const uint32_t *token);
 //       steps.
 // program - Flat array of integers containing the nv2a transform opcodes to be
 //           processed.
-// program_size - Number of integers in `program`.
+// program_slots - Number of slots in `program` (each slot is 4 integers).
 //
 // Note: On success, the caller is responsible for calling
 //       `nv2a_vsh_program_destroy` to clean up the allocated program.
 Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
                                           const uint32_t *program,
-                                          uint32_t program_size);
+                                          uint32_t program_slots);
 
 #ifdef __cplusplus
 }  // extern "C"
