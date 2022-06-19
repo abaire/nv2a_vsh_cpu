@@ -7,8 +7,8 @@ Nv2aVshExecutionState nv2a_vsh_emu_initialize_full_execution_state(
   memset(state, 0, sizeof(*state));
   Nv2aVshExecutionState ret = {
       (float *)state->input_regs, (float *)state->output_regs,
-      (float *)state->temp_regs, (float *)state->context_regs};
-  (float *)&state->address_reg;
+      (float *)state->temp_regs, (float *)state->context_regs,
+      (float *)&state->address_reg};
   return ret;
 }
 
@@ -20,7 +20,7 @@ Nv2aVshExecutionState nv2a_vsh_emu_initialize_xss_execution_state(
   state->context_dirty = context_dirty;
   Nv2aVshExecutionState ret = {
       (float *)state->input_regs, (float *)state->output_regs,
-      (float *)state->temp_regs, (float *)state->context_regs};
-  (float *)&state->address_reg;
+      (float *)state->temp_regs, (float *)state->context_regs,
+      (float *)&state->address_reg};
   return ret;
 }
