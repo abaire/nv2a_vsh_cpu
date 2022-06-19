@@ -26,6 +26,18 @@ set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_library(
+        nv2a_vsh_disassembler
+        src/nv2a_vsh_disassembler.c
+        src/nv2a_vsh_disassembler.h
+)
+
+target_include_directories(
+        nv2a_vsh_disassembler
+        PRIVATE
+        src
+)
+
+add_library(
         nv2a_vsh_cpu
         src/nv2a_vsh_cpu.c
         src/nv2a_vsh_cpu.h
@@ -38,16 +50,26 @@ target_include_directories(
 )
 
 add_library(
-        nv2a_vsh_disassembler
-        src/nv2a_vsh_disassembler.c
-        src/nv2a_vsh_disassembler.h
+        nv2a_vsh_emulator
+        src/nv2a_vsh_emulator.c
+        src/nv2a_vsh_emulator.h
+        src/nv2a_vsh_emulator_execution_state.c
+        src/nv2a_vsh_emulator_execution_state.h
 )
 
 target_include_directories(
-        nv2a_vsh_disassembler
+        nv2a_vsh_emulator
         PRIVATE
         src
 )
+
+target_link_libraries(
+        nv2a_vsh_emulator
+        PRIVATE nv2a_vsh_cpu
+        PRIVATE nv2a_vsh_disassembler
+)
+add_dependencies(nv2a_vsh_emulator nv2a_vsh_cpu nv2a_vsh_disassembler)
+
 
 # Tests ----------------------------------------------
 add_executable(
@@ -88,3 +110,23 @@ target_link_libraries(
 )
 add_test(NAME disassembler_tests COMMAND disassembler_tests)
 add_dependencies(disassembler_tests nv2a_vsh_disassembler)
+
+
+add_executable(
+        emulator_tests
+        test/emulator/test_main.cpp
+        test/emulator/test_basic.cpp
+)
+target_include_directories(
+        emulator_tests
+        PRIVATE src
+        PRIVATE test
+)
+target_link_libraries(
+        emulator_tests
+        LINK_PRIVATE
+        nv2a_vsh_emulator
+        ${Boost_LIBRARIES}
+)
+add_test(NAME emulator_tests COMMAND emulator_tests)
+add_dependencies(emulator_tests nv2a_vsh_emulator)
