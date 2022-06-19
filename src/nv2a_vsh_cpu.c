@@ -3,11 +3,11 @@
 #include <math.h>
 #include <string.h>
 
-void nv2a_vsh_cpu_mov(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_mov(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   memcpy(out, a, sizeof(*out));
 }
 
-void nv2a_vsh_cpu_arl(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_arl(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   float val = floorf(a->reg.x + 0.001f);
   out->reg.x = val;
   out->reg.y = val;
@@ -15,32 +15,32 @@ void nv2a_vsh_cpu_arl(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
   out->reg.w = val;
 }
 
-void nv2a_vsh_cpu_mul(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_mul(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = a->reg.x * b->reg.x;
   out->reg.y = a->reg.y * b->reg.y;
   out->reg.z = a->reg.z * b->reg.z;
   out->reg.w = a->reg.w * b->reg.w;
 }
 
-void nv2a_vsh_cpu_add(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_add(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = a->reg.x + b->reg.x;
   out->reg.y = a->reg.y + b->reg.y;
   out->reg.z = a->reg.z + b->reg.z;
   out->reg.w = a->reg.w + b->reg.w;
 }
 
-void nv2a_vsh_cpu_mad(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b, const nv2a_vsh_register *c) {
+void nv2a_vsh_cpu_mad(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b, const Nv2aVshRegister *c) {
   out->reg.x = a->reg.x * b->reg.x + c->reg.x;
   out->reg.y = a->reg.y * b->reg.y + c->reg.y;
   out->reg.z = a->reg.z * b->reg.z + c->reg.z;
   out->reg.w = a->reg.w * b->reg.w + c->reg.w;
 }
 
-void nv2a_vsh_cpu_dp3(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_dp3(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   float result =
       a->reg.x * b->reg.x + a->reg.y * b->reg.y + a->reg.z * b->reg.z;
   out->reg.x = result;
@@ -49,8 +49,8 @@ void nv2a_vsh_cpu_dp3(nv2a_vsh_register *out, const nv2a_vsh_register *a,
   out->reg.w = result;
 }
 
-void nv2a_vsh_cpu_dph(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_dph(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   float result = a->reg.x * b->reg.x + a->reg.y * b->reg.y +
                  a->reg.z * b->reg.z + b->reg.w;
   out->reg.x = result;
@@ -59,8 +59,8 @@ void nv2a_vsh_cpu_dph(nv2a_vsh_register *out, const nv2a_vsh_register *a,
   out->reg.w = result;
 }
 
-void nv2a_vsh_cpu_dp4(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_dp4(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   float result = a->reg.x * b->reg.x + a->reg.y * b->reg.y +
                  a->reg.z * b->reg.z + a->reg.w * b->reg.w;
   out->reg.x = result;
@@ -69,47 +69,47 @@ void nv2a_vsh_cpu_dp4(nv2a_vsh_register *out, const nv2a_vsh_register *a,
   out->reg.w = result;
 }
 
-void nv2a_vsh_cpu_dst(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_dst(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = 1.0f;
   out->reg.y = a->reg.y * b->reg.y;
   out->reg.z = a->reg.z;
   out->reg.w = b->reg.w;
 }
 
-void nv2a_vsh_cpu_min(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_min(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = a->reg.x < b->reg.x ? a->reg.x : b->reg.x;
   out->reg.y = a->reg.y < b->reg.y ? a->reg.y : b->reg.y;
   out->reg.z = a->reg.z < b->reg.z ? a->reg.z : b->reg.z;
   out->reg.w = a->reg.w < b->reg.w ? a->reg.w : b->reg.w;
 }
 
-void nv2a_vsh_cpu_max(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_max(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = a->reg.x > b->reg.x ? a->reg.x : b->reg.x;
   out->reg.y = a->reg.y > b->reg.y ? a->reg.y : b->reg.y;
   out->reg.z = a->reg.z > b->reg.z ? a->reg.z : b->reg.z;
   out->reg.w = a->reg.w > b->reg.w ? a->reg.w : b->reg.w;
 }
 
-void nv2a_vsh_cpu_slt(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_slt(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = a->reg.x < b->reg.x ? 1.0f : 0.0f;
   out->reg.y = a->reg.y < b->reg.y ? 1.0f : 0.0f;
   out->reg.z = a->reg.z < b->reg.z ? 1.0f : 0.0f;
   out->reg.w = a->reg.w < b->reg.w ? 1.0f : 0.0f;
 }
 
-void nv2a_vsh_cpu_sge(nv2a_vsh_register *out, const nv2a_vsh_register *a,
-                      const nv2a_vsh_register *b) {
+void nv2a_vsh_cpu_sge(Nv2aVshRegister *out, const Nv2aVshRegister *a,
+                      const Nv2aVshRegister *b) {
   out->reg.x = a->reg.x >= b->reg.x ? 1.0f : 0.0f;
   out->reg.y = a->reg.y >= b->reg.y ? 1.0f : 0.0f;
   out->reg.z = a->reg.z >= b->reg.z ? 1.0f : 0.0f;
   out->reg.w = a->reg.w >= b->reg.w ? 1.0f : 0.0f;
 }
 
-void nv2a_vsh_cpu_rcp(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_rcp(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   float result =
       (a->reg.x == 1.0f ? 1.0f
                         : (a->reg.x == 0.0f ? INFINITY : 1.0f / a->reg.x));
@@ -119,7 +119,7 @@ void nv2a_vsh_cpu_rcp(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
   out->reg.w = result;
 }
 
-void nv2a_vsh_cpu_rcc(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_rcc(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   // TODO: Validate this on HW.
   float result;
   if (a->reg.x == 1.0f) {
@@ -143,7 +143,7 @@ void nv2a_vsh_cpu_rcc(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
   out->reg.w = result;
 }
 
-void nv2a_vsh_cpu_rsq(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_rsq(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   float result = (a->reg.x == 1.0f
                       ? 1.0f
                       : (a->reg.x == 0.0f ? INFINITY : 1.0f / sqrtf(a->reg.x)));
@@ -153,7 +153,7 @@ void nv2a_vsh_cpu_rsq(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
   out->reg.w = result;
 }
 
-void nv2a_vsh_cpu_exp(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_exp(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   float tmp = floorf(a->reg.x);
   out->reg.x = powf(2.0f, tmp);
   out->reg.y = a->reg.x - tmp;
@@ -161,7 +161,7 @@ void nv2a_vsh_cpu_exp(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
   out->reg.w = 1.0f;
 }
 
-void nv2a_vsh_cpu_log(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_log(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   // TODO: Validate this on HW.
   float tmp = fabsf(a->reg.x);
   if (tmp == 0.0f) {
@@ -182,7 +182,7 @@ void nv2a_vsh_cpu_log(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
   out->reg.w = 1.0f;
 }
 
-void nv2a_vsh_cpu_lit(nv2a_vsh_register *out, const nv2a_vsh_register *a) {
+void nv2a_vsh_cpu_lit(Nv2aVshRegister *out, const Nv2aVshRegister *a) {
   static const float kMax = 127.9961f;
 
   out->reg.x = 1.0f;

@@ -5,27 +5,26 @@
 extern "C" {
 #endif
 
-struct nv2a_vsh_register_components {
+struct Nv2aVshRegisterComponents {
   float x;
   float y;
   float z;
   float w;
 };
 
-typedef union nv2a_vsh_register_ {
-  struct nv2a_vsh_register_components reg;
+typedef union Nv2aVshRegister_ {
+  struct Nv2aVshRegisterComponents reg;
   float raw[4];
-} nv2a_vsh_register;
+} Nv2aVshRegister;
 
 #define OP_1(name) \
-  void nv2a_vsh_cpu_##name(nv2a_vsh_register *out, const nv2a_vsh_register *a)
-#define OP_2(name)                                                             \
-  void nv2a_vsh_cpu_##name(nv2a_vsh_register *out, const nv2a_vsh_register *a, \
-                           const nv2a_vsh_register *b)
-#define OP_3(name)                                                             \
-  void nv2a_vsh_cpu_##name(nv2a_vsh_register *out, const nv2a_vsh_register *a, \
-                           const nv2a_vsh_register *b,                         \
-                           const nv2a_vsh_register *c)
+  void nv2a_vsh_cpu_##name(Nv2aVshRegister *out, const Nv2aVshRegister *a)
+#define OP_2(name)                                                         \
+  void nv2a_vsh_cpu_##name(Nv2aVshRegister *out, const Nv2aVshRegister *a, \
+                           const Nv2aVshRegister *b)
+#define OP_3(name)                                                         \
+  void nv2a_vsh_cpu_##name(Nv2aVshRegister *out, const Nv2aVshRegister *a, \
+                           const Nv2aVshRegister *b, const Nv2aVshRegister *c)
 
 OP_1(mov);
 OP_1(arl);
@@ -52,7 +51,7 @@ OP_1(lit);
 #undef OP_3
 
 #ifdef __cplusplus
-};
+};  // extern "C"
 #endif
 
 #endif  // NV2A_VSH_CPU_SRC_NV2A_VSH_CPU_H_

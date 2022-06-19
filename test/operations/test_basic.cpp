@@ -5,9 +5,9 @@
 BOOST_AUTO_TEST_SUITE(basic_operation_suite)
 
 BOOST_AUTO_TEST_CASE(mov) {
-  nv2a_vsh_register a = {0.0f, -1000.0f, 1000.0f, 64.123456f};
+  Nv2aVshRegister a = {0.0f, -1000.0f, 1000.0f, 64.123456f};
 
-  nv2a_vsh_register out;
+  Nv2aVshRegister out;
   nv2a_vsh_cpu_mov(&out, &a);
 
   BOOST_TEST(out.reg.x == a.reg.x);
@@ -17,9 +17,9 @@ BOOST_AUTO_TEST_CASE(mov) {
 }
 
 BOOST_AUTO_TEST_CASE(arl_trivial) {
-  nv2a_vsh_register a = {10.0f, -1000.0f, 1000.0f, 64.123456f};
+  Nv2aVshRegister a = {10.0f, -1000.0f, 1000.0f, 64.123456f};
 
-  nv2a_vsh_register out;
+  Nv2aVshRegister out;
   nv2a_vsh_cpu_arl(&out, &a);
 
   BOOST_TEST(out.reg.x == a.reg.x);
@@ -29,9 +29,9 @@ BOOST_AUTO_TEST_CASE(arl_trivial) {
 }
 
 BOOST_AUTO_TEST_CASE(arl_truncate) {
-  nv2a_vsh_register a = {10.12345f, -1000.0f, 1000.0f, 64.123456f};
+  Nv2aVshRegister a = {10.12345f, -1000.0f, 1000.0f, 64.123456f};
 
-  nv2a_vsh_register out;
+  Nv2aVshRegister out;
   nv2a_vsh_cpu_arl(&out, &a);
 
   BOOST_TEST(out.reg.x == 10.0f);
@@ -41,9 +41,9 @@ BOOST_AUTO_TEST_CASE(arl_truncate) {
 }
 
 BOOST_AUTO_TEST_CASE(arl_biased) {
-  nv2a_vsh_register a = {9.9999999f, -1000.0f, 1000.0f, 64.123456f};
+  Nv2aVshRegister a = {9.9999999f, -1000.0f, 1000.0f, 64.123456f};
 
-  nv2a_vsh_register out;
+  Nv2aVshRegister out;
   nv2a_vsh_cpu_arl(&out, &a);
 
   BOOST_TEST(out.reg.x == 10.0f);
