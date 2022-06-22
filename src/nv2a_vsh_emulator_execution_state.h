@@ -38,16 +38,20 @@ typedef struct Nv2aVshExecutionState_ {
   float *context_regs;
   // a0
   float *address_reg;
+
+  // Optional array of 192 bools that will be set when writing to entries in
+  // context_regs.
+  bool *context_dirty;
 } Nv2aVshExecutionState;
 
 // Stores the entire execution state for full software-based nv2a vertex shader
 // emulation.
 typedef struct Nv2aVshCPUFullExecutionState_ {
-  Nv2aVshRegister input_regs[16];
-  Nv2aVshRegister output_regs[13];
-  Nv2aVshRegister temp_regs[12];
-  Nv2aVshRegister context_regs[192];
-  Nv2aVshRegister address_reg;
+  float input_regs[16 * 4];
+  float output_regs[13 * 4];
+  float temp_regs[12 * 4];
+  float context_regs[192 * 4];
+  float address_reg[4];
 } Nv2aVshCPUFullExecutionState;
 
 // Models a partial execution context where the context registers are held
@@ -55,12 +59,12 @@ typedef struct Nv2aVshCPUFullExecutionState_ {
 // context registers.
 typedef struct Nv2aVshCPUXVSSExecutionState_ {
   // Only v0 is used.
-  Nv2aVshRegister input_regs[1];
+  float input_regs[1 * 4];
 
   // No output registers are used.
   float *output_regs;
 
-  Nv2aVshRegister temp_regs[11];
+  float temp_regs[11 * 4];
 
   // Context regs should be initialized to a flat array of 192 registers.
   float *context_regs;
@@ -69,7 +73,7 @@ typedef struct Nv2aVshCPUXVSSExecutionState_ {
   // context_regs.
   bool *context_dirty;
 
-  Nv2aVshRegister address_reg;
+  float address_reg[4];
 } Nv2aVshCPUXVSSExecutionState;
 
 // Initializes the given Nv2aVshCPUFullExecutionState and returns an

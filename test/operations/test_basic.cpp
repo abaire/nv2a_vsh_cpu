@@ -5,51 +5,62 @@
 BOOST_AUTO_TEST_SUITE(basic_operation_suite)
 
 BOOST_AUTO_TEST_CASE(mov) {
-  Nv2aVshRegister a = {0.0f, -1000.0f, 1000.0f, 64.123456f};
+  float inputs[] = {0.0f, -1000.0f, 1000.0f, 64.123456f};
+  float out[4];
+  nv2a_vsh_cpu_mov(out, inputs);
 
-  Nv2aVshRegister out;
-  nv2a_vsh_cpu_mov(&out, &a);
-
-  BOOST_TEST(out.reg.x == a.reg.x);
-  BOOST_TEST(out.reg.y == a.reg.y);
-  BOOST_TEST(out.reg.z == a.reg.z);
-  BOOST_TEST(out.reg.w == a.reg.w);
+  BOOST_TEST(out[0] == inputs[0]);
+  BOOST_TEST(out[1] == inputs[1]);
+  BOOST_TEST(out[2] == inputs[2]);
+  BOOST_TEST(out[3] == inputs[3]);
 }
 
 BOOST_AUTO_TEST_CASE(arl_trivial) {
-  Nv2aVshRegister a = {10.0f, -1000.0f, 1000.0f, 64.123456f};
+  float inputs[] = {10.0f, -1000.0f, 1000.0f, 64.123456f};
 
-  Nv2aVshRegister out;
-  nv2a_vsh_cpu_arl(&out, &a);
+  float out[4];
+  nv2a_vsh_cpu_arl(out, inputs);
 
-  BOOST_TEST(out.reg.x == a.reg.x);
-  BOOST_TEST(out.reg.y == a.reg.x);
-  BOOST_TEST(out.reg.z == a.reg.x);
-  BOOST_TEST(out.reg.w == a.reg.x);
+  BOOST_TEST(out[0] == inputs[0]);
+  BOOST_TEST(out[1] == inputs[0]);
+  BOOST_TEST(out[2] == inputs[0]);
+  BOOST_TEST(out[3] == inputs[0]);
 }
 
 BOOST_AUTO_TEST_CASE(arl_truncate) {
-  Nv2aVshRegister a = {10.12345f, -1000.0f, 1000.0f, 64.123456f};
+  float inputs[] = {10.12345f, -1000.0f, 1000.0f, 64.123456f};
 
-  Nv2aVshRegister out;
-  nv2a_vsh_cpu_arl(&out, &a);
+  float out[4];
+  nv2a_vsh_cpu_arl(out, inputs);
 
-  BOOST_TEST(out.reg.x == 10.0f);
-  BOOST_TEST(out.reg.y == 10.0f);
-  BOOST_TEST(out.reg.z == 10.0f);
-  BOOST_TEST(out.reg.w == 10.0f);
+  BOOST_TEST(out[0] == 10.0f);
+  BOOST_TEST(out[1] == 10.0f);
+  BOOST_TEST(out[2] == 10.0f);
+  BOOST_TEST(out[3] == 10.0f);
 }
 
 BOOST_AUTO_TEST_CASE(arl_biased) {
-  Nv2aVshRegister a = {9.9999999f, -1000.0f, 1000.0f, 64.123456f};
+  float inputs[] = {9.9999999f, -1000.0f, 1000.0f, 64.123456f};
 
-  Nv2aVshRegister out;
-  nv2a_vsh_cpu_arl(&out, &a);
+  float out[4];
+  nv2a_vsh_cpu_arl(out, inputs);
 
-  BOOST_TEST(out.reg.x == 10.0f);
-  BOOST_TEST(out.reg.y == 10.0f);
-  BOOST_TEST(out.reg.z == 10.0f);
-  BOOST_TEST(out.reg.w == 10.0f);
+  BOOST_TEST(out[0] == 10.0f);
+  BOOST_TEST(out[1] == 10.0f);
+  BOOST_TEST(out[2] == 10.0f);
+  BOOST_TEST(out[3] == 10.0f);
 }
 
+BOOST_AUTO_TEST_CASE(add_trivial) {
+  float inputs[] = {1.0f, 2.0f, 4.0f, 64.0f,
+                    10.0f, -10.0f, 100.0f, -100.0f};
+
+  float out[4];
+  nv2a_vsh_cpu_add(out, inputs);
+
+  BOOST_TEST(out[0] == 11.0f);
+  BOOST_TEST(out[1] == -8.0f);
+  BOOST_TEST(out[2] == 104.0f);
+  BOOST_TEST(out[3] == -36.0f);
+}
 BOOST_AUTO_TEST_SUITE_END()

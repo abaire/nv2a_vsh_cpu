@@ -5,10 +5,10 @@
 #define CHECK_REGISTER(bank, index, actual) \
   do {                                      \
     float *expected = bank + index * 4;     \
-    BOOST_TEST((expected)[0] == actual[0]); \
-    BOOST_TEST((expected)[1] == actual[1]); \
-    BOOST_TEST((expected)[2] == actual[2]); \
-    BOOST_TEST((expected)[3] == actual[3]); \
+    BOOST_TEST((expected)[0] == (actual)[0]); \
+    BOOST_TEST((expected)[1] == (actual)[1]); \
+    BOOST_TEST((expected)[2] == (actual)[2]); \
+    BOOST_TEST((expected)[3] == (actual)[3]); \
   } while (0)
 
 static void clear_step(Nv2aVshStep *out) {
@@ -63,10 +63,11 @@ BOOST_AUTO_TEST_CASE(step_trivial) {
   Nv2aVshCPUFullExecutionState full_state;
   Nv2aVshExecutionState state =
       nv2a_vsh_emu_initialize_full_execution_state(&full_state);
-  full_state.input_regs[11].reg.x = 123.0f;
-  full_state.input_regs[11].reg.y = -456.0f;
-  full_state.input_regs[11].reg.z = 0.789f;
-  full_state.input_regs[11].reg.w = 32.64f;
+  uint32_t reg = 11 * 4;
+  full_state.input_regs[reg + 0] = 123.0f;
+  full_state.input_regs[reg + 1] = -456.0f;
+  full_state.input_regs[reg + 2] = 0.789f;
+  full_state.input_regs[reg + 3] = 32.64f;
 
   // MOV oT2.xyzw, v11
   Nv2aVshStep step;
@@ -80,7 +81,7 @@ BOOST_AUTO_TEST_CASE(step_trivial) {
 
   nv2a_vsh_emu_apply(&state, &step);
 
-  CHECK_REGISTER(state.output_regs, NV2AOR_TEX2, full_state.input_regs[11].raw);
+  CHECK_REGISTER(state.output_regs, NV2AOR_TEX2, &full_state.input_regs[reg]);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
