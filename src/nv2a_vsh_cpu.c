@@ -1,6 +1,8 @@
 #include "nv2a_vsh_cpu.h"
 
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 #define _X 0
@@ -101,25 +103,50 @@ void nv2a_vsh_cpu_max(float *out, const float *inputs) {
       COMP(inputs, 0, _W) > COMP(inputs, 1, _W) ? COMP(inputs, 0, _W) : COMP(inputs, 1, _W);
 }
 
+static inline float nv2a_less_than(float a, float b) {
+  if (a < b) {
+    return 1.0f;
+  }
+
+  // nv2a hardware treats -0 as < 0.
+  uint32_t a_int = *(uint32_t*)&a;
+  uint32_t b_int = *(uint32_t*)&b;
+  if (a_int == 0x80000000 && !b_int) {
+    return 1.0f;
+  }
+
+  return 0.0f;
+}
+
 void nv2a_vsh_cpu_slt(float *out, const float *inputs) {
-  out[0] = COMP(inputs, 0, _X) < COMP(inputs, 1, _X) ? 1.0f : 0.0f;
-  out[1] = COMP(inputs, 0, _Y) < COMP(inputs, 1, _Y) ? 1.0f : 0.0f;
-  out[2] = COMP(inputs, 0, _Z) < COMP(inputs, 1, _Z) ? 1.0f : 0.0f;
-  out[3] = COMP(inputs, 0, _W) < COMP(inputs, 1, _W) ? 1.0f : 0.0f;
+  out[0] = nv2a_less_than(COMP(inputs, 0, _X), COMP(inputs, 1, _X));
+  out[1] = nv2a_less_than(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y));
+  out[2] = nv2a_less_than(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z));
+  out[3] = nv2a_less_than(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
 }
 
 void nv2a_vsh_cpu_sge(float *out, const float *inputs) {
-  out[0] = COMP(inputs, 0, _X) >= COMP(inputs, 1, _X) ? 1.0f : 0.0f;
-  out[1] = COMP(inputs, 0, _Y) >= COMP(inputs, 1, _Y) ? 1.0f : 0.0f;
-  out[2] = COMP(inputs, 0, _Z) >= COMP(inputs, 1, _Z) ? 1.0f : 0.0f;
-  out[3] = COMP(inputs, 0, _W) >= COMP(inputs, 1, _W) ? 1.0f : 0.0f;
+  out[0] = -1.0f * nv2a_less_than(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) + 1.0f;
+  out[1] = -1.0f * nv2a_less_than(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) + 1.0f;
+  out[2] = -1.0f * nv2a_less_than(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + 1.0f;
+  out[3] = -1.0f * nv2a_less_than(COMP(inputs, 0, _W), COMP(inputs, 1, _W)) + 1.0f;
 }
 
 void nv2a_vsh_cpu_rcp(float *out, const float *inputs) {
-  float result =
-      (COMP(inputs, 0, _X) == 1.0f
-           ? 1.0f
-           : (COMP(inputs, 0, _X) == 0.0f ? INFINITY : 1.0f / COMP(inputs, 0, _X)));
+  float in = COMP(inputs, 0, _X);
+  float result;
+  if (in == 1.0f) {
+    result = 1.0f;
+  } else if (in == 0.0f) {
+    // nv2a preserves the sign.
+    if (*(uint32_t*)&in & 0x80000000) {
+      result = -INFINITY;
+    } else {
+      result = INFINITY;
+    }
+  } else {
+    result = 1.0f / in;
+  }
   out[0] = result;
   out[1] = result;
   out[2] = result;
@@ -151,6 +178,20 @@ void nv2a_vsh_cpu_rcc(float *out, const float *inputs) {
 }
 
 void nv2a_vsh_cpu_rsq(float *out, const float *inputs) {
+//  float in = COMP(inputs, 0, _X);
+//  float result;
+//  if (in == 1.0f) {
+//    result = 1.0f;
+//  } else if (in == 0.0f) {
+//    // nv2a preserves the sign.
+//    if (*(uint32_t*)&in & 0x80000000) {
+//      result = -INFINITY;
+//    } else {
+//      result = INFINITY;
+//    }
+//  } else {
+//    result = 1.0f / in;
+//  }
   float result =
       (inputs[0] == 1.0f
            ? 1.0f
