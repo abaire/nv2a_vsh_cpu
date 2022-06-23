@@ -49,10 +49,10 @@ void nv2a_vsh_cpu_add(float *out, const float *inputs) {
 }
 
 void nv2a_vsh_cpu_mad(float *out, const float *inputs) {
-  out[0] = COMP(inputs, 0, _X) * COMP(inputs, 1, _X) + COMP(inputs, 2, _X);
-  out[1] = COMP(inputs, 0, _Y) * COMP(inputs, 1, _Y) + COMP(inputs, 2, _Y);
-  out[2] = COMP(inputs, 0, _Z) * COMP(inputs, 1, _Z) + COMP(inputs, 2, _Z);
-  out[3] = COMP(inputs, 0, _W) * COMP(inputs, 1, _W) + COMP(inputs, 2, _W);
+  out[0] = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) + COMP(inputs, 2, _X);
+  out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) + COMP(inputs, 2, _Y);
+  out[2] = fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + COMP(inputs, 2, _Z);
+  out[3] = fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W)) + COMP(inputs, 2, _W);
 }
 
 void nv2a_vsh_cpu_dp3(float *out, const float *inputs) {
