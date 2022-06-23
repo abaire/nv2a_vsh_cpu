@@ -153,24 +153,33 @@ void nv2a_vsh_cpu_rcp(float *out, const float *inputs) {
   out[3] = result;
 }
 
+static const uint32_t kRCCMaxInt = 0x5F800000;
+static const uint32_t kRCCMaxNegInt = 0xDF800000;
+
+#include <assert.h>
+
 void nv2a_vsh_cpu_rcc(float *out, const float *inputs) {
-  // TODO: Validate this on HW.
   float result;
-  if (COMP(inputs, 0, _X) == 1.0f) {
+  float in = COMP(inputs, 0, _X);
+  if (in == 1.0f) {
     result = 1.0f;
   } else {
-    if (COMP(inputs, 0, _X) < -1.84467e19f) {
-      result = 1.0f / -1.84467e19f;
-    } else if (COMP(inputs, 0, _X) > -5.42101e-20f && COMP(inputs, 0, _X) < 0.0f) {
-      result = 1.0f / -5.42101e-020f;
-    } else if (COMP(inputs, 0, _X) >= 0 && COMP(inputs, 0, _X) < 5.42101e-20f) {
-      result = 1.0f / 5.42101e-20f;
-    } else if (COMP(inputs, 0, _X) > 1.84467e+19f) {
-      result = 1.0f / 1.84467e+19f;
+    result = 1.0f / in;
+    if (result > 0.0f) {
+      if (result < 5.42101e-020f) {
+        result = 5.42101e-020f;
+      } else if (result > 1.884467e+019f) {
+        result = *(float*)&kRCCMaxInt;
+      }
     } else {
-      result = 1.0f / COMP(inputs, 0, _X);
+      if (result < -1.884467e+019f) {
+        result = *(float*)&kRCCMaxNegInt;
+      } else if (result > -5.42101e-020f) {
+        result = -5.42101e-020f;
+      }
     }
   }
+
   out[0] = result;
   out[1] = result;
   out[2] = result;
@@ -181,8 +190,6 @@ void nv2a_vsh_cpu_rsq(float *out, const float *inputs) {
   float in = fabsf(inputs[0]);
   float result;
   if (in == 1.0f) {
-    result = 1.0f;
-  } else if (in == -1.0f) {
     result = 1.0f;
   } else if (in == 0.0f) {
     result = INFINITY;
