@@ -178,24 +178,18 @@ void nv2a_vsh_cpu_rcc(float *out, const float *inputs) {
 }
 
 void nv2a_vsh_cpu_rsq(float *out, const float *inputs) {
-//  float in = COMP(inputs, 0, _X);
-//  float result;
-//  if (in == 1.0f) {
-//    result = 1.0f;
-//  } else if (in == 0.0f) {
-//    // nv2a preserves the sign.
-//    if (*(uint32_t*)&in & 0x80000000) {
-//      result = -INFINITY;
-//    } else {
-//      result = INFINITY;
-//    }
-//  } else {
-//    result = 1.0f / in;
-//  }
-  float result =
-      (inputs[0] == 1.0f
-           ? 1.0f
-           : (inputs[0] == 0.0f ? INFINITY : 1.0f / sqrtf(inputs[0])));
+  float in = fabsf(inputs[0]);
+  float result;
+  if (in == 1.0f) {
+    result = 1.0f;
+  } else if (in == -1.0f) {
+    result = 1.0f;
+  } else if (in == 0.0f) {
+    result = INFINITY;
+  } else {
+    result = 1.0f / sqrtf(in);
+  }
+
   out[0] = result;
   out[1] = result;
   out[2] = result;
