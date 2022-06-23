@@ -23,11 +23,22 @@ void nv2a_vsh_cpu_arl(float *out, const float *inputs) {
   out[3] = val;
 }
 
+// nv2a does not allow multiplication of non-inf numbers to result in inf.
+static inline float fix_inf_mult(float a, float b) {
+  float output = a * b;
+  if (!isinf(output) || isinf(a) || isinf(b)) {
+    return output;
+  }
+
+  uint32_t fixed = (*(uint32_t*)&output & 0xFF000000) + 0x7FFFFF;
+  return *(float*)&fixed;
+}
+
 void nv2a_vsh_cpu_mul(float *out, const float *inputs) {
-  out[0] = COMP(inputs, 0, _X) * COMP(inputs, 1, _X);
-  out[1] = COMP(inputs, 0, _Y) * COMP(inputs, 1, _Y);
-  out[2] = COMP(inputs, 0, _Z) * COMP(inputs, 1, _Z);
-  out[3] = COMP(inputs, 0, _W) * COMP(inputs, 1, _W);
+  out[0] = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X));
+  out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y));
+  out[2] = fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z));
+  out[3] = fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
 }
 
 void nv2a_vsh_cpu_add(float *out, const float *inputs) {
@@ -155,8 +166,6 @@ void nv2a_vsh_cpu_rcp(float *out, const float *inputs) {
 
 static const uint32_t kRCCMaxInt = 0x5F800000;
 static const uint32_t kRCCMaxNegInt = 0xDF800000;
-
-#include <assert.h>
 
 void nv2a_vsh_cpu_rcc(float *out, const float *inputs) {
   float result;
