@@ -4,14 +4,17 @@ project(nv2a_vsh_cpu)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 include(CMakePushCheckState)
 set(_CMAKE_PROCESSING_LANGUAGE "C")
 include(CheckSymbolExists)
 include (ExternalProject)
-include(FindPkgConfig)
 
+option(nv2a_vsh_cpu_UNIT_TEST "Enable nv2a_vsh_cpu's various unit tests" ON)
+
+# Unit Test's requirement ----------------------------
+if (nv2a_vsh_cpu_UNIT_TEST)
+include(FindPkgConfig)
 find_package(
         Boost 1.74
         COMPONENTS
@@ -21,6 +24,7 @@ find_package(
 
 set(GENERATED_FILES_DIR "${CMAKE_BINARY_DIR}/generated")
 include_directories("${Boost_INCLUDE_DIR}" "${GENERATED_FILES_DIR}")
+endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -71,7 +75,9 @@ target_link_libraries(
 add_dependencies(nv2a_vsh_emulator nv2a_vsh_cpu nv2a_vsh_disassembler)
 
 
-# Tests ----------------------------------------------
+# Unit Tests -----------------------------------------
+if (nv2a_vsh_cpu_UNIT_TEST)
+enable_testing()
 add_executable(
         operations_tests
         test/operations/test_main.cpp
@@ -130,3 +136,4 @@ target_link_libraries(
 )
 add_test(NAME emulator_tests COMMAND emulator_tests)
 add_dependencies(emulator_tests nv2a_vsh_emulator)
+endif()
