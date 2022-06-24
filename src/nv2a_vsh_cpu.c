@@ -246,10 +246,15 @@ void nv2a_vsh_cpu_log(float *out, const float *inputs) {
     out[1] = 1.0f;
     out[2] = INFINITY;
   } else {
-    int exp = 0;
-    out[1] = frexpf(tmp, &exp);
-    out[0] = (float)exp;
-    out[2] = out[0] + log2f(tmp);
+    // frexpf returns values that do not match nv2a, so the exponent is
+    // extracted manually.
+    uint32_t tmp_int = *(uint32_t*)&tmp;
+    uint32_t exponent = ((tmp_int >> 23) & 0xFF) - 127;
+    uint32_t mantissa = (tmp_int & 0x7FFFFF) | 0x3F800000;
+
+    out[0] = (float)exponent;
+    out[1] = *(float*)&mantissa;
+    out[2] = log2f(tmp);
   }
 
   out[3] = 1.0f;

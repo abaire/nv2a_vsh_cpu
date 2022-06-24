@@ -92,7 +92,10 @@ BOOST_AUTO_TEST_CASE(add_trivial) {
 //  }
 //}
 
+// Returned values are very close to correct and could be checked with a more
+// permissive float equality.
 //BOOST_AUTO_TEST_CASE(log_trivial) {
+//  // 0xDB5056B0
 //  float inputs[][4] = {
 //      {-5.864211e16f, 0.0f, 0.0f, 0.0f},
 //      {0.0f, 0.0f, 0.0f, 0.0f},
