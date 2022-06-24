@@ -56,9 +56,9 @@ void nv2a_vsh_cpu_mad(float *out, const float *inputs) {
 }
 
 void nv2a_vsh_cpu_dp3(float *out, const float *inputs) {
-  float result = COMP(inputs, 0, _X) * COMP(inputs, 1, _X) +
-                 COMP(inputs, 0, _Y) * COMP(inputs, 1, _Y) +
-                 COMP(inputs, 0, _Z) * COMP(inputs, 1, _Z);
+  float result = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
+                 fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
+                 fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z));
   out[0] = result;
   out[1] = result;
   out[2] = result;
@@ -66,9 +66,9 @@ void nv2a_vsh_cpu_dp3(float *out, const float *inputs) {
 }
 
 void nv2a_vsh_cpu_dph(float *out, const float *inputs) {
-  float result = COMP(inputs, 0, _X) * COMP(inputs, 1, _X) +
-                 COMP(inputs, 0, _Y) * COMP(inputs, 1, _Y) +
-                 COMP(inputs, 0, _Z) * COMP(inputs, 1, _Z) + COMP(inputs, 1, _W);
+  float result = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
+                 fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
+                 fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + COMP(inputs, 1, _W);
   out[0] = result;
   out[1] = result;
   out[2] = result;
@@ -77,8 +77,10 @@ void nv2a_vsh_cpu_dph(float *out, const float *inputs) {
 
 void nv2a_vsh_cpu_dp4(float *out, const float *inputs) {
   float result =
-      COMP(inputs, 0, _X) * COMP(inputs, 1, _X) + COMP(inputs, 0, _Y) * COMP(inputs, 1, _Y) +
-      COMP(inputs, 0, _Z) * COMP(inputs, 1, _Z) + COMP(inputs, 0, _W) * COMP(inputs, 1, _W);
+      fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
+      fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
+      fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) +
+      fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
   out[0] = result;
   out[1] = result;
   out[2] = result;
@@ -87,7 +89,7 @@ void nv2a_vsh_cpu_dp4(float *out, const float *inputs) {
 
 void nv2a_vsh_cpu_dst(float *out, const float *inputs) {
   out[0] = 1.0f;
-  out[1] = COMP(inputs, 0, _Y) * COMP(inputs, 1, _Y);
+  out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y));
   out[2] = COMP(inputs, 0, _Z);
   out[3] = COMP(inputs, 1, _W);
 }

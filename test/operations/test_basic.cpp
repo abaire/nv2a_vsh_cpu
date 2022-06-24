@@ -1,4 +1,5 @@
 #include <boost/test/unit_test.hpp>
+#include <cmath>
 
 #include "nv2a_vsh_cpu.h"
 
@@ -63,4 +64,59 @@ BOOST_AUTO_TEST_CASE(add_trivial) {
   BOOST_TEST(out[2] == 104.0f);
   BOOST_TEST(out[3] == -36.0f);
 }
+
+//BOOST_AUTO_TEST_CASE(dp3_trivial) {
+//  float inputs[][8] = {
+//      {-8.901235e+25f, 6.432100e-15f, 5.864211e+16f, 1.844675e+19f, 1.844675e+19f, -6.432100e-15f, 1.234568e+20f, -0.123457f}
+//  };
+//  float results[][4] = {
+//      {-3.330426e+38f, -3.330426e+38f, -3.330426e+38f, -3.330426e+38f},
+//  };
+//
+//  for (uint32_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
+//    float *in = inputs[i];
+//    float *expected = results[i];
+//    BOOST_TEST_INFO(i);
+//    float out[4];
+//    nv2a_vsh_cpu_dp3(out, in);
+//
+//    BOOST_TEST(out[0] == expected[0]);
+//    BOOST_TEST(out[1] == expected[1]);
+//    BOOST_TEST(out[2] == expected[2]);
+//    BOOST_TEST(out[3] == expected[3]);
+//
+//  }
+//}
+//
+//BOOST_AUTO_TEST_CASE(log_trivial) {
+//  float inputs[][4] = {
+//      {-5.864211e16f, 0.0f, 0.0f, 0.0f},
+//      {0.0f, 0.0f, 0.0f, 0.0f},
+//      {-0.0f, 0.0f, 0.0f, 0.0f},
+//      {INFINITY, 0.0f, 0.0f, 0.0f},
+//      {-INFINITY, 0.0f, 0.0f, 0.0f},
+//  };
+//  float results[][4] = {
+//      {55.0f, 1.62765f, 55.7028f, 1.0f},
+//      {-INFINITY, 1.0f, -INFINITY, 1.0f},
+//      {-INFINITY, 1.0f, -INFINITY, 1.0f},
+//      {INFINITY, 1.0f, INFINITY, 1.0f},
+//      {INFINITY, 1.0f, INFINITY, 1.0f},
+//  };
+//
+//  for (uint32_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); ++i) {
+//    float *in = inputs[i];
+//    float *expected = results[i];
+//    BOOST_TEST_INFO(i);
+//    float out[4];
+//    nv2a_vsh_cpu_log(out, in);
+//
+//    BOOST_TEST(out[0] == expected[0]);
+//    BOOST_TEST(out[1] == expected[1]);
+//    BOOST_TEST(out[2] == expected[2]);
+//    BOOST_TEST(out[3] == expected[3]);
+//
+//  }
+//}
+
 BOOST_AUTO_TEST_SUITE_END()
