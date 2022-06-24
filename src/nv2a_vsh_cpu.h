@@ -24,7 +24,11 @@ void nv2a_vsh_cpu_sge(float *out, const float *inputs);
 void nv2a_vsh_cpu_rcp(float *out, const float *inputs);
 void nv2a_vsh_cpu_rcc(float *out, const float *inputs);
 void nv2a_vsh_cpu_rsq(float *out, const float *inputs);
+
+// WARNING: Negative inputs are not valid on hardware and are silently processed
+// here.
 void nv2a_vsh_cpu_exp(float *out, const float *inputs);
+
 void nv2a_vsh_cpu_log(float *out, const float *inputs);
 void nv2a_vsh_cpu_lit(float *out, const float *inputs);
 
