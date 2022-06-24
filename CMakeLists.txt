@@ -63,7 +63,7 @@ add_library(
 
 target_include_directories(
         nv2a_vsh_emulator
-        PRIVATE
+        PUBLIC
         src
 )
 
