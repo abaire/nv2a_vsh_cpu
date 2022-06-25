@@ -37,8 +37,7 @@ static inline void set_register(float *out, const float *in,
   out[3] = mult * in[swizzle[3]];
 }
 
-static inline void fetch_value(float *out,
-                               const Nv2aVshExecutionState *state,
+static inline void fetch_value(float *out, const Nv2aVshExecutionState *state,
                                const Nv2aVshInput *input) {
   const float *in;
 
@@ -125,12 +124,11 @@ static inline void apply_operation(Nv2aVshExecutionState *state,
   }
 }
 
-static inline void apply(Nv2aVshExecutionState *state,
-                         const Nv2aVshStep *step) {
+static inline void prepare_inputs(float *mac_inputs, float *ilu_input,
+                                  Nv2aVshExecutionState *state,
+                                  const Nv2aVshStep *step) {
   // Copy the inputs for both operations first to prevent introducing order
   // dependent behavior.
-  float mac_inputs[3 * 4];
-  float ilu_input[4];
   if (step->mac.opcode) {
     for (uint32_t i = 0; i < 3; ++i) {
       if (step->mac.inputs[i].type == NV2ART_NONE) {
@@ -142,12 +140,44 @@ static inline void apply(Nv2aVshExecutionState *state,
   if (step->ilu.opcode) {
     fetch_value(ilu_input, state, &step->ilu.inputs[0]);
   }
+}
+
+static inline void apply(Nv2aVshExecutionState *state,
+                         const Nv2aVshStep *step) {
+  float mac_inputs[3 * 4];
+  float ilu_input[4];
+  prepare_inputs(mac_inputs, &ilu_input, state, step);
 
   if (step->mac.opcode) {
     apply_operation(state, &step->mac, mac_inputs);
   }
   if (step->ilu.opcode) {
     apply_operation(state, &step->ilu, ilu_input);
+  }
+}
+
+static inline void apply_track_context_writes(Nv2aVshExecutionState *state,
+                                              const Nv2aVshStep *step,
+                                              bool *context_dirty) {
+  float mac_inputs[3 * 4];
+  float ilu_input[4];
+  prepare_inputs(mac_inputs, &ilu_input, state, step);
+
+  if (step->mac.opcode) {
+    apply_operation(state, &step->mac, mac_inputs);
+    if (step->mac.outputs[0].type == NV2ART_CONTEXT) {
+      context_dirty[step->mac.outputs[0].index] = true;
+    } else if (step->mac.outputs[1].type == NV2ART_CONTEXT) {
+      context_dirty[step->mac.outputs[1].index] = true;
+    }
+  }
+  if (step->ilu.opcode) {
+    apply_operation(state, &step->ilu, &ilu_input);
+    if (step->ilu.outputs[0].type == NV2ART_CONTEXT) {
+      context_dirty[step->ilu.outputs[0].index] = true;
+    } else if (step->ilu.outputs[1].type == NV2ART_CONTEXT) {
+      context_dirty[step->ilu.outputs[1].index] = true;
+    }
   }
 }
 
@@ -159,6 +189,23 @@ void nv2a_vsh_emu_execute(Nv2aVshExecutionState *state,
   Nv2aVshStep *step = program->steps;
   while (true) {
     apply(state, step);
+    if (step->is_final) {
+      break;
+    }
+    ++step;
+  }
+}
+
+void nv2a_vsh_emu_execute_track_context_writes(Nv2aVshExecutionState *state,
+                                               const Nv2aVshProgram *program,
+                                               bool *context_dirty) {
+  assert(state);
+  assert(program && program->steps);
+  assert(context_dirty);
+
+  Nv2aVshStep *step = program->steps;
+  while (true) {
+    apply_track_context_writes(state, step, context_dirty);
     if (step->is_final) {
       break;
     }
