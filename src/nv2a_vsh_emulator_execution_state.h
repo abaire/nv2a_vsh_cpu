@@ -69,10 +69,6 @@ typedef struct Nv2aVshCPUXVSSExecutionState_ {
   // Context regs should be initialized to a flat array of 192 registers.
   float *context_regs;
 
-  // Optional array of 192 bools that will be set when writing to entries in
-  // context_regs.
-  bool *context_dirty;
-
   float address_reg[4];
 } Nv2aVshCPUXVSSExecutionState;
 
@@ -84,8 +80,7 @@ Nv2aVshExecutionState nv2a_vsh_emu_initialize_full_execution_state(
 // Initializes the given Nv2aVshCPUXVSSExecutionState and returns an
 // Nv2aVshExecutionState appropriate for use with nv2a_vsh_cpu_* functions.
 Nv2aVshExecutionState nv2a_vsh_emu_initialize_xss_execution_state(
-    Nv2aVshCPUXVSSExecutionState *state, float *context_regs,
-    bool *context_dirty);
+    Nv2aVshCPUXVSSExecutionState *state, float *context_regs);
 
 #ifdef __cplusplus
 }  // extern "C"
