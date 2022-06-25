@@ -544,4 +544,151 @@ BOOST_AUTO_TEST_CASE(step_context_write) {
   check_result(expected, actual);
 }
 
+BOOST_AUTO_TEST_CASE(step_paired_cinput_r2) {
+  // DP4 R11.y, R5, c[113] + MOV oT2.xyz, R2
+  static constexpr uint32_t kTest[][4] = {
+      {0, 49160219, 1412831340, 2494621788},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.mac.opcode = NV2AOP_DP4;
+  expected.mac.outputs[0].type = NV2ART_TEMPORARY;
+  expected.mac.outputs[0].index = 11;
+  expected.mac.outputs[0].writemask = NV2AWM_Y;
+
+  expected.mac.inputs[0].type = NV2ART_TEMPORARY;
+  expected.mac.inputs[0].index = 5;
+
+  expected.mac.inputs[1].type = NV2ART_CONTEXT;
+  expected.mac.inputs[1].index = 113;
+
+  expected.ilu.opcode = NV2AOP_MOV;
+  expected.ilu.outputs[0].type = NV2ART_OUTPUT;
+  expected.ilu.outputs[0].index = 11;
+  expected.ilu.outputs[0].writemask = NV2AWM_XYZ;
+
+  expected.ilu.inputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.inputs[0].index = 2;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
+BOOST_AUTO_TEST_CASE(step_ilu_rcp_r3_r2) {
+  // rcp r3, r2
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0400001b, 0x0836106c, 0x903f0ff8},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.ilu.opcode = NV2AOP_RCP;
+  expected.ilu.outputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.outputs[0].index = 3;
+  expected.ilu.outputs[0].writemask = NV2AWM_XYZW;
+
+  expected.ilu.inputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.inputs[0].index = 2;
+  expected.ilu.inputs[0].swizzle[0] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[1] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[2] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[3] = NV2ASW_X;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
+BOOST_AUTO_TEST_CASE(step_ilu_rcp_r4_r3) {
+  // rcp r4, r3
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0400001b, 0x0836106c, 0xd04f0ff8},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.ilu.opcode = NV2AOP_RCP;
+  expected.ilu.outputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.outputs[0].index = 4;
+  expected.ilu.outputs[0].writemask = NV2AWM_XYZW;
+
+  expected.ilu.inputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.inputs[0].index = 3;
+  expected.ilu.inputs[0].swizzle[0] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[1] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[2] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[3] = NV2ASW_X;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
+BOOST_AUTO_TEST_CASE(step_ilu_rcp_r5_r11) {
+  // rcp r5, r11
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0400001b, 0x0836106e, 0xd05f0ff8},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.ilu.opcode = NV2AOP_RCP;
+  expected.ilu.outputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.outputs[0].index = 5;
+  expected.ilu.outputs[0].writemask = NV2AWM_XYZW;
+
+  expected.ilu.inputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.inputs[0].index = 11;
+  expected.ilu.inputs[0].swizzle[0] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[1] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[2] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[3] = NV2ASW_X;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
+BOOST_AUTO_TEST_CASE(step_ilu_rcp_r6_r12) {
+  // rcp r6, r12
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0400001b, 0x0836106f, 0x106f0ff8},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.ilu.opcode = NV2AOP_RCP;
+  expected.ilu.outputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.outputs[0].index = 6;
+  expected.ilu.outputs[0].writemask = NV2AWM_XYZW;
+
+  expected.ilu.inputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.inputs[0].index = 12;
+  expected.ilu.inputs[0].swizzle[0] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[1] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[2] = NV2ASW_X;
+  expected.ilu.inputs[0].swizzle[3] = NV2ASW_X;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

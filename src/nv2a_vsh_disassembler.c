@@ -199,7 +199,7 @@ static inline Nv2aVshInputType parse_c_type(const uint32_t *token) {
 }
 
 static inline uint32_t parse_c_temp_reg(const uint32_t *token) {
-  uint32_t low = EXTRACT(token, 3, 20, 2);
+  uint32_t low = EXTRACT(token, 3, 30, 2);
   uint32_t high = EXTRACT(token, 2, 0, 2);
   return ((high & 0x03) << 2) + (low & 0x03);
 }
