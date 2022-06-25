@@ -16,7 +16,7 @@ option(nv2a_vsh_cpu_UNIT_TEST "Enable nv2a_vsh_cpu's various unit tests" ON)
 if (nv2a_vsh_cpu_UNIT_TEST)
 include(FindPkgConfig)
 find_package(
-        Boost 1.74
+        Boost 1.71
         COMPONENTS
         unit_test_framework
         REQUIRED
