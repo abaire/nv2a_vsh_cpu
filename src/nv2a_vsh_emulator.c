@@ -146,7 +146,7 @@ static inline void apply(Nv2aVshExecutionState *state,
                          const Nv2aVshStep *step) {
   float mac_inputs[3 * 4];
   float ilu_input[4];
-  prepare_inputs(mac_inputs, &ilu_input, state, step);
+  prepare_inputs(mac_inputs, ilu_input, state, step);
 
   if (step->mac.opcode) {
     apply_operation(state, &step->mac, mac_inputs);
@@ -161,7 +161,7 @@ static inline void apply_track_context_writes(Nv2aVshExecutionState *state,
                                               bool *context_dirty) {
   float mac_inputs[3 * 4];
   float ilu_input[4];
-  prepare_inputs(mac_inputs, &ilu_input, state, step);
+  prepare_inputs(mac_inputs, ilu_input, state, step);
 
   if (step->mac.opcode) {
     apply_operation(state, &step->mac, mac_inputs);
@@ -172,7 +172,7 @@ static inline void apply_track_context_writes(Nv2aVshExecutionState *state,
     }
   }
   if (step->ilu.opcode) {
-    apply_operation(state, &step->ilu, &ilu_input);
+    apply_operation(state, &step->ilu, ilu_input);
     if (step->ilu.outputs[0].type == NV2ART_CONTEXT) {
       context_dirty[step->ilu.outputs[0].index] = true;
     } else if (step->ilu.outputs[1].type == NV2ART_CONTEXT) {
