@@ -107,6 +107,10 @@ static inline void apply_operation(Nv2aVshExecutionState *state,
       case NV2ART_ADDRESS:
         outreg = state->address_reg;
         break;
+
+      default:
+        assert(!"Invalid output type");
+        return;
     }
 
     if (out->writemask & NV2AWM_X) {
