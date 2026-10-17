@@ -35,3 +35,46 @@ jobs:
         run: build/disassembler_tests
       - name: Test Emulator
         run: build/emulator_tests
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -yq libboost-test-dev
+          pipx install gcovr==8.2
+      - name: Build with coverage instrumentation
+        run: |
+          cmake -Bbuild -S. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="--coverage" \
+            -DCMAKE_CXX_FLAGS="--coverage" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+          cmake --build build/ --target all
+      - name: Run tests
+        run: |
+          build/operations_tests
+          build/disassembler_tests
+          build/emulator_tests
+      - name: Generate coverage report
+        run: |
+          mkdir -p coverage
+          gcovr --root . --filter src/ build/ \
+            --txt coverage/summary.txt \
+            --html-details coverage/index.html \
+            --cobertura coverage/cobertura.xml \
+            --print-summary
+          {
+            echo '## Coverage'
+            echo '```'
+            cat coverage/summary.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
