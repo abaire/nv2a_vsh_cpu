@@ -119,7 +119,8 @@ typedef struct Nv2aVshStep_ {
 } Nv2aVshStep;
 
 typedef struct Nv2aVshProgram_ {
-  Nv2aVshStep *steps;
+  Nv2aVshStep* steps;
+  uint32_t num_steps;
 } Nv2aVshProgram;
 
 typedef enum Nv2aVshParseResult_ {
@@ -130,26 +131,29 @@ typedef enum Nv2aVshParseResult_ {
   NV2AVPR_ARL_CONFLICT,
   NV2AVPR_BAD_MAC_OPCODE,
   NV2AVPR_BAD_ILU_OPCODE,
+  NV2AVPR_PROGRAM_UNTERMINATED,
 } Nv2aVshParseResult;
 
-void nv2a_vsh_program_destroy(Nv2aVshProgram *program);
+void nv2a_vsh_program_destroy(Nv2aVshProgram* program);
 
 // Disassemble the given token (which must be 4 uint32_t's) into an Nv2aVshStep.
-Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out, const uint32_t *token);
+Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep* out, const uint32_t* token);
 
 // Disassemble the given array of nv2a transform opcodes into an
-// Nv2aVshProgram representation.
+// Nv2aVshProgram representation. Parsing halts when a step with `is_final` is
+// processed.
 //
 // out - Nv2aVshProgram which will be updated to contain the parsed
 //       steps.
 // program - Flat array of integers containing the nv2a transform opcodes to be
 //           processed.
-// program_slots - Number of slots in `program` (each slot is 4 integers).
+// program_slots - Maximum number of slots in `program` to process (each slot
+//                 is 4 integers).
 //
 // Note: On success, the caller is responsible for calling
 //       `nv2a_vsh_program_destroy` to clean up the allocated program.
-Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
-                                          const uint32_t *program,
+Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram* out,
+                                          const uint32_t* program,
                                           uint32_t program_slots);
 
 #ifdef __cplusplus

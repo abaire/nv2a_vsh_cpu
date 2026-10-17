@@ -4,14 +4,14 @@
 
 #define CHECK_REGISTER(bank, index, actual)   \
   do {                                        \
-    float *expected = bank + index * 4;       \
+    float* expected = bank + index * 4;       \
     BOOST_TEST((expected)[0] == (actual)[0]); \
     BOOST_TEST((expected)[1] == (actual)[1]); \
     BOOST_TEST((expected)[2] == (actual)[2]); \
     BOOST_TEST((expected)[3] == (actual)[3]); \
   } while (0)
 
-static void clear_step(Nv2aVshStep *out) {
+static void clear_step(Nv2aVshStep* out) {
   out->is_final = false;
   memset(out->mac.outputs, 0, sizeof(out->mac.outputs));
   memset(out->mac.inputs, 0, sizeof(out->mac.inputs));
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(program_context_tracked) {
 
   // MOV c1.xyzw, v11
   Nv2aVshStep steps[1];
-  Nv2aVshStep *step = &steps[0];
+  Nv2aVshStep* step = &steps[0];
   clear_step(step);
   step->mac.opcode = NV2AOP_MOV;
   step->mac.outputs[0].type = NV2ART_CONTEXT;
@@ -108,6 +108,7 @@ BOOST_AUTO_TEST_CASE(program_context_tracked) {
 
   Nv2aVshProgram program;
   program.steps = steps;
+  program.num_steps = 1;
 
   bool context_dirty[192] = {false};
   nv2a_vsh_emu_execute_track_context_writes(&state, &program, context_dirty);
@@ -119,6 +120,37 @@ BOOST_AUTO_TEST_CASE(program_context_tracked) {
     BOOST_TEST_INFO(i);
     BOOST_TEST(!context_dirty[i]);
   }
+}
+
+BOOST_AUTO_TEST_CASE(program_parsed_and_executed) {
+  Nv2aVshCPUFullExecutionState full_state;
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  uint32_t reg = 11 * 4;
+  full_state.input_regs[reg + 0] = 123.0f;
+  full_state.input_regs[reg + 1] = -456.0f;
+  full_state.input_regs[reg + 2] = 0.789f;
+  full_state.input_regs[reg + 3] = 32.64f;
+
+  // Step 0: MOV oT2.xyzw, v11 (is_final = false)
+  // Step 1: MOV oT2.xyzw, v11 (is_final = true)
+  // Step 2: Trailing junk tokens that would fail parsing if parsed
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+      {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF},
+  };
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kProgram[0], 3);
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  BOOST_TEST(program.num_steps == 2);
+
+  nv2a_vsh_emu_execute(&state, &program);
+
+  CHECK_REGISTER(state.output_regs, NV2AOR_TEX2, &full_state.input_regs[reg]);
+
+  nv2a_vsh_program_destroy(&program);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

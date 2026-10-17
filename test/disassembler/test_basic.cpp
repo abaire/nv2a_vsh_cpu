@@ -4,7 +4,7 @@
 
 BOOST_AUTO_TEST_SUITE(basic_disassembler_suite)
 
-static void clear_step(Nv2aVshStep *out) {
+static void clear_step(Nv2aVshStep* out) {
   out->is_final = false;
   memset(out->mac.outputs, 0, sizeof(out->mac.outputs));
   memset(out->mac.inputs, 0, sizeof(out->mac.inputs));
@@ -50,8 +50,8 @@ static void clear_step(Nv2aVshStep *out) {
   out->ilu.outputs[1].type = NV2ART_NONE;
 }
 
-static void check_opcode(const Nv2aVshOperation &expected,
-                         const Nv2aVshOperation &actual) {
+static void check_opcode(const Nv2aVshOperation& expected,
+                         const Nv2aVshOperation& actual) {
   for (int i = 0; i < 2; ++i) {
     BOOST_TEST_INFO_SCOPE("Output " << i);
     BOOST_TEST(expected.outputs[i].type == actual.outputs[i].type);
@@ -82,8 +82,8 @@ static void check_opcode(const Nv2aVshOperation &expected,
   }
 }
 
-static void check_result(const Nv2aVshStep &expected,
-                         const Nv2aVshStep &actual) {
+static void check_result(const Nv2aVshStep& expected,
+                         const Nv2aVshStep& actual) {
   BOOST_TEST(expected.mac.opcode == actual.mac.opcode);
   if (expected.mac.opcode != NV2AOP_NOP) {
     BOOST_TEST_INFO("MAC");
@@ -689,6 +689,140 @@ BOOST_AUTO_TEST_CASE(step_ilu_rcp_r6_r12) {
 
   BOOST_TEST(result == NV2AVPR_SUCCESS);
   check_result(expected, actual);
+}
+
+BOOST_AUTO_TEST_CASE(parse_program_single_step) {
+  // MOV oT2.xyzw, v11 (with is_final = true)
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+  };
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kProgram[0], 1);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  BOOST_TEST(program.num_steps == 1);
+  BOOST_TEST(program.steps != nullptr);
+  BOOST_TEST(program.steps[0].is_final == true);
+  BOOST_TEST(program.steps[0].mac.opcode == NV2AOP_MOV);
+
+  nv2a_vsh_program_destroy(&program);
+  BOOST_TEST(program.steps == nullptr);
+  BOOST_TEST(program.num_steps == 0);
+}
+
+BOOST_AUTO_TEST_CASE(parse_program_stops_at_is_final_ignoring_junk) {
+  // Step 0: MOV oT2.xyzw, v11 (is_final = false)
+  // Step 1: MOV oT2.xyzw, v11 (is_final = true)
+  // Step 2 & 3: Invalid junk tokens that would fail parsing if evaluated
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+      {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF},
+      {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF},
+  };
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kProgram[0], 4);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  BOOST_TEST(program.num_steps == 2);
+  BOOST_TEST(program.steps != nullptr);
+  BOOST_TEST(program.steps[0].is_final == false);
+  BOOST_TEST(program.steps[1].is_final == true);
+
+  nv2a_vsh_program_destroy(&program);
+}
+
+BOOST_AUTO_TEST_CASE(parse_program_multiple_shaders_in_buffer) {
+  // Buffer containing 2 shaders:
+  // Shader 1 (slots 0..1):
+  //   Step 0: MOV oT2.xyzw, v11 (is_final = false)
+  //   Step 1: MOV oT2.xyzw, v11 (is_final = true)
+  // Shader 2 (slot 2):
+  //   Step 0: MAD oPos.xyz, R12, R1.x, c[59] (is_final = true)
+  static constexpr uint32_t kBuffer[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+      {0x00000000, 0x0087601B, 0xC400286C, 0x3070E801},
+  };
+
+  const uint32_t* cursor = kBuffer[0];
+  uint32_t remaining_slots = 3;
+
+  // Parse shader 1
+  Nv2aVshProgram program1;
+  auto result1 = nv2a_vsh_parse_program(&program1, cursor, remaining_slots);
+  BOOST_TEST(result1 == NV2AVPR_SUCCESS);
+  BOOST_TEST(program1.num_steps == 2);
+  BOOST_TEST(program1.steps[0].is_final == false);
+  BOOST_TEST(program1.steps[1].is_final == true);
+  BOOST_TEST(program1.steps[1].mac.opcode == NV2AOP_MOV);
+
+  // Advance cursor past shader 1
+  cursor += program1.num_steps * 4;
+  remaining_slots -= program1.num_steps;
+  BOOST_TEST(remaining_slots == 1);
+
+  // Parse shader 2
+  Nv2aVshProgram program2;
+  auto result2 = nv2a_vsh_parse_program(&program2, cursor, remaining_slots);
+  BOOST_TEST(result2 == NV2AVPR_SUCCESS);
+  BOOST_TEST(program2.num_steps == 1);
+  BOOST_TEST(program2.steps[0].is_final == true);
+  BOOST_TEST(program2.steps[0].mac.opcode == NV2AOP_MAD);
+
+  nv2a_vsh_program_destroy(&program1);
+  nv2a_vsh_program_destroy(&program2);
+}
+
+BOOST_AUTO_TEST_CASE(parse_program_unterminated_fails) {
+  // Steps with is_final = false
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x00EC801B, 0x0836186C, 0x20702800},
+  };
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kProgram[0], 2);
+
+  BOOST_TEST(result == NV2AVPR_PROGRAM_UNTERMINATED);
+  BOOST_TEST(program.steps == nullptr);
+  BOOST_TEST(program.num_steps == 0);
+}
+
+BOOST_AUTO_TEST_CASE(parse_program_invalid_arguments) {
+  static constexpr uint32_t kValid[4] = {0x00000000, 0x0020161B, 0x0836106C,
+                                         0x2070F859};
+  Nv2aVshProgram program;
+
+  BOOST_TEST(nv2a_vsh_parse_program(nullptr, kValid, 1) == NV2AVPR_BAD_OUTPUT);
+  BOOST_TEST(nv2a_vsh_parse_program(&program, nullptr, 1) ==
+             NV2AVPR_BAD_PROGRAM);
+  BOOST_TEST(nv2a_vsh_parse_program(&program, kValid, 0) ==
+             NV2AVPR_BAD_PROGRAM_SIZE);
+  BOOST_TEST(nv2a_vsh_parse_program(&program, kValid, 137) ==
+             NV2AVPR_BAD_PROGRAM_SIZE);
+}
+
+BOOST_AUTO_TEST_CASE(program_destroy_safety) {
+  nv2a_vsh_program_destroy(nullptr);
+
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+  };
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kProgram[0], 1);
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+
+  nv2a_vsh_program_destroy(&program);
+  BOOST_TEST(program.steps == nullptr);
+  BOOST_TEST(program.num_steps == 0);
+
+  // Calling destroy again should be a safe no-op
+  nv2a_vsh_program_destroy(&program);
+  BOOST_TEST(program.steps == nullptr);
+  BOOST_TEST(program.num_steps == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
