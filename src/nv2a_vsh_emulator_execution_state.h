@@ -29,19 +29,19 @@ typedef enum Nv2aVshOutputRegisterName_ {
 // float.
 typedef struct Nv2aVshExecutionState_ {
   // v0-v15
-  float *input_regs;
+  float* input_regs;
   // o0 - o12, 1 and 2 will never be written to.
-  float *output_regs;
+  float* output_regs;
   // r0-r11
-  float *temp_regs;
+  float* temp_regs;
   // c0-c191
-  float *context_regs;
+  float* context_regs;
   // a0
-  float *address_reg;
+  float* address_reg;
 
   // Optional array of 192 bools that will be set when writing to entries in
   // context_regs.
-  bool *context_dirty;
+  bool* context_dirty;
 } Nv2aVshExecutionState;
 
 // Stores the entire execution state for full software-based nv2a vertex shader
@@ -62,12 +62,12 @@ typedef struct Nv2aVshCPUXVSSExecutionState_ {
   float input_regs[1 * 4];
 
   // No output registers are used.
-  float *output_regs;
+  float* output_regs;
 
   float temp_regs[11 * 4];
 
   // Context regs should be initialized to a flat array of 192 registers.
-  float *context_regs;
+  float* context_regs;
 
   float address_reg[4];
 } Nv2aVshCPUXVSSExecutionState;
@@ -75,12 +75,12 @@ typedef struct Nv2aVshCPUXVSSExecutionState_ {
 // Initializes the given Nv2aVshCPUFullExecutionState and returns an
 // Nv2aVshExecutionState appropriate for use with nv2a_vsh_cpu_* functions.
 Nv2aVshExecutionState nv2a_vsh_emu_initialize_full_execution_state(
-    Nv2aVshCPUFullExecutionState *state);
+    Nv2aVshCPUFullExecutionState* state);
 
 // Initializes the given Nv2aVshCPUXVSSExecutionState and returns an
 // Nv2aVshExecutionState appropriate for use with nv2a_vsh_cpu_* functions.
 Nv2aVshExecutionState nv2a_vsh_emu_initialize_xss_execution_state(
-    Nv2aVshCPUXVSSExecutionState *state, float *context_regs);
+    Nv2aVshCPUXVSSExecutionState* state, float* context_regs);
 
 #ifdef __cplusplus
 }  // extern "C"

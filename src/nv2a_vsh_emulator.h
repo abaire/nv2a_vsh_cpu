@@ -8,17 +8,17 @@ extern "C" {
 #endif
 
 // Emulates the given program by applying each step to the given state.
-void nv2a_vsh_emu_execute(Nv2aVshExecutionState *state,
-                          const Nv2aVshProgram *program);
+void nv2a_vsh_emu_execute(Nv2aVshExecutionState* state,
+                          const Nv2aVshProgram* program);
 
 // context_dirty is an array of 192 bools that will be set when writing to
 // entries in context_regs.
-void nv2a_vsh_emu_execute_track_context_writes(Nv2aVshExecutionState *state,
-                                               const Nv2aVshProgram *program,
-                                               bool *context_dirty);
+void nv2a_vsh_emu_execute_track_context_writes(Nv2aVshExecutionState* state,
+                                               const Nv2aVshProgram* program,
+                                               bool* context_dirty);
 
 // Emulates the given step by applying it to the given state.
-void nv2a_vsh_emu_apply(Nv2aVshExecutionState *state, const Nv2aVshStep *step);
+void nv2a_vsh_emu_apply(Nv2aVshExecutionState* state, const Nv2aVshStep* step);
 
 #ifdef __cplusplus
 }  // extern "C"

@@ -28,8 +28,8 @@ static Nv2aVshCpuFunc kDispatchTable[] = {
 };
 // clang format on
 
-static inline void set_register(float *out, const float *in,
-                                const uint8_t *swizzle, bool negate) {
+static inline void set_register(float* out, const float* in,
+                                const uint8_t* swizzle, bool negate) {
   float mult = negate ? -1.0f : 1.0f;
   out[0] = mult * in[swizzle[0]];
   out[1] = mult * in[swizzle[1]];
@@ -37,9 +37,9 @@ static inline void set_register(float *out, const float *in,
   out[3] = mult * in[swizzle[3]];
 }
 
-static inline void fetch_value(float *out, const Nv2aVshExecutionState *state,
-                               const Nv2aVshInput *input) {
-  const float *in;
+static inline void fetch_value(float* out, const Nv2aVshExecutionState* state,
+                               const Nv2aVshInput* input) {
+  const float* in;
 
   switch (input->type) {
     default:
@@ -69,9 +69,9 @@ static inline void fetch_value(float *out, const Nv2aVshExecutionState *state,
   set_register(out, in, input->swizzle, input->is_negated);
 }
 
-static inline void apply_operation(Nv2aVshExecutionState *state,
-                                   const Nv2aVshOperation *op,
-                                   const float *inputs) {
+static inline void apply_operation(Nv2aVshExecutionState* state,
+                                   const Nv2aVshOperation* op,
+                                   const float* inputs) {
   if (op->opcode == NV2AOP_NOP) {
     return;
   }
@@ -79,9 +79,9 @@ static inline void apply_operation(Nv2aVshExecutionState *state,
   float result[4];
   kDispatchTable[op->opcode](result, inputs);
 
-  const Nv2aVshOutput *out = op->outputs;
+  const Nv2aVshOutput* out = op->outputs;
   for (uint32_t i = 0; i < 2; ++i, ++out) {
-    float *outreg;
+    float* outreg;
     switch (out->type) {
       case NV2ART_INPUT:
         assert(!"Attempt to write to input register.");
@@ -128,9 +128,9 @@ static inline void apply_operation(Nv2aVshExecutionState *state,
   }
 }
 
-static inline void prepare_inputs(float *mac_inputs, float *ilu_input,
-                                  Nv2aVshExecutionState *state,
-                                  const Nv2aVshStep *step) {
+static inline void prepare_inputs(float* mac_inputs, float* ilu_input,
+                                  Nv2aVshExecutionState* state,
+                                  const Nv2aVshStep* step) {
   // Copy the inputs for both operations first to prevent introducing order
   // dependent behavior.
   if (step->mac.opcode) {
@@ -146,8 +146,8 @@ static inline void prepare_inputs(float *mac_inputs, float *ilu_input,
   }
 }
 
-static inline void apply(Nv2aVshExecutionState *state,
-                         const Nv2aVshStep *step) {
+static inline void apply(Nv2aVshExecutionState* state,
+                         const Nv2aVshStep* step) {
   float mac_inputs[3 * 4];
   float ilu_input[4];
   prepare_inputs(mac_inputs, ilu_input, state, step);
@@ -160,9 +160,9 @@ static inline void apply(Nv2aVshExecutionState *state,
   }
 }
 
-static inline void apply_track_context_writes(Nv2aVshExecutionState *state,
-                                              const Nv2aVshStep *step,
-                                              bool *context_dirty) {
+static inline void apply_track_context_writes(Nv2aVshExecutionState* state,
+                                              const Nv2aVshStep* step,
+                                              bool* context_dirty) {
   float mac_inputs[3 * 4];
   float ilu_input[4];
   prepare_inputs(mac_inputs, ilu_input, state, step);
@@ -185,12 +185,12 @@ static inline void apply_track_context_writes(Nv2aVshExecutionState *state,
   }
 }
 
-void nv2a_vsh_emu_execute(Nv2aVshExecutionState *state,
-                          const Nv2aVshProgram *program) {
+void nv2a_vsh_emu_execute(Nv2aVshExecutionState* state,
+                          const Nv2aVshProgram* program) {
   assert(state);
   assert(program && program->steps);
 
-  Nv2aVshStep *step = program->steps;
+  Nv2aVshStep* step = program->steps;
   while (true) {
     apply(state, step);
     if (step->is_final) {
@@ -200,14 +200,14 @@ void nv2a_vsh_emu_execute(Nv2aVshExecutionState *state,
   }
 }
 
-void nv2a_vsh_emu_execute_track_context_writes(Nv2aVshExecutionState *state,
-                                               const Nv2aVshProgram *program,
-                                               bool *context_dirty) {
+void nv2a_vsh_emu_execute_track_context_writes(Nv2aVshExecutionState* state,
+                                               const Nv2aVshProgram* program,
+                                               bool* context_dirty) {
   assert(state);
   assert(program && program->steps);
   assert(context_dirty);
 
-  Nv2aVshStep *step = program->steps;
+  Nv2aVshStep* step = program->steps;
   while (true) {
     apply_track_context_writes(state, step, context_dirty);
     if (step->is_final) {
@@ -217,6 +217,6 @@ void nv2a_vsh_emu_execute_track_context_writes(Nv2aVshExecutionState *state,
   }
 }
 
-void nv2a_vsh_emu_apply(Nv2aVshExecutionState *state, const Nv2aVshStep *step) {
+void nv2a_vsh_emu_apply(Nv2aVshExecutionState* state, const Nv2aVshStep* step) {
   apply(state, step);
 }
