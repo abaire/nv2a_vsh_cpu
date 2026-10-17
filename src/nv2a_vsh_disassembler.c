@@ -59,152 +59,152 @@ static const Nv2aVshOpcode kMACOpcodeToGeneric[] = {
     NV2AOP_MAX, NV2AOP_SLT, NV2AOP_SGE, NV2AOP_ARL,
 };
 
-void nv2a_vsh_program_destroy(Nv2aVshProgram *program) {
+void nv2a_vsh_program_destroy(Nv2aVshProgram* program) {
   if (program && program->steps) {
     free(program->steps);
     program->steps = NULL;
   }
 }
 
-static inline uint32_t parse_a_swizzle_w(const uint32_t *token) {
+static inline uint32_t parse_a_swizzle_w(const uint32_t* token) {
   return EXTRACT(token, 1, 0, 2);
 }
 
-static inline uint32_t parse_a_swizzle_z(const uint32_t *token) {
+static inline uint32_t parse_a_swizzle_z(const uint32_t* token) {
   return EXTRACT(token, 1, 2, 2);
 }
 
-static inline uint32_t parse_a_swizzle_y(const uint32_t *token) {
+static inline uint32_t parse_a_swizzle_y(const uint32_t* token) {
   return EXTRACT(token, 1, 4, 2);
 }
 
-static inline uint32_t parse_a_swizzle_x(const uint32_t *token) {
+static inline uint32_t parse_a_swizzle_x(const uint32_t* token) {
   return EXTRACT(token, 1, 6, 2);
 }
 
-static inline bool parse_a_negate(const uint32_t *token) {
+static inline bool parse_a_negate(const uint32_t* token) {
   return EXTRACT(token, 1, 8, 1);
 }
 
-static inline uint32_t parse_input_reg(const uint32_t *token) {
+static inline uint32_t parse_input_reg(const uint32_t* token) {
   return EXTRACT(token, 1, 9, 4);
 }
 
-static inline uint32_t parse_context_reg(const uint32_t *token) {
+static inline uint32_t parse_context_reg(const uint32_t* token) {
   return EXTRACT(token, 1, 13, 8);
 }
 
-static inline Nv2aVshMACOpcode parse_mac_opcode(const uint32_t *token) {
+static inline Nv2aVshMACOpcode parse_mac_opcode(const uint32_t* token) {
   return EXTRACT(token, 1, 21, 4);
 }
 
-static inline Nv2aVshILUOpcode parse_ilu_opcode(const uint32_t *token) {
+static inline Nv2aVshILUOpcode parse_ilu_opcode(const uint32_t* token) {
   return EXTRACT(token, 1, 25, 3);
 }
 
-static inline uint32_t parse_c_swizzle_w(const uint32_t *token) {
+static inline uint32_t parse_c_swizzle_w(const uint32_t* token) {
   return EXTRACT(token, 2, 2, 2);
 }
 
-static inline uint32_t parse_c_swizzle_z(const uint32_t *token) {
+static inline uint32_t parse_c_swizzle_z(const uint32_t* token) {
   return EXTRACT(token, 2, 4, 2);
 }
 
-static inline uint32_t parse_c_swizzle_y(const uint32_t *token) {
+static inline uint32_t parse_c_swizzle_y(const uint32_t* token) {
   return EXTRACT(token, 2, 6, 2);
 }
 
-static inline uint32_t parse_c_swizzle_x(const uint32_t *token) {
+static inline uint32_t parse_c_swizzle_x(const uint32_t* token) {
   return EXTRACT(token, 2, 8, 2);
 }
 
-static inline bool parse_c_negate(const uint32_t *token) {
+static inline bool parse_c_negate(const uint32_t* token) {
   return EXTRACT(token, 2, 10, 1);
 }
 
-static inline Nv2aVshInputType parse_b_type(const uint32_t *token) {
+static inline Nv2aVshInputType parse_b_type(const uint32_t* token) {
   return EXTRACT(token, 2, 11, 2);
 }
 
-static inline uint32_t parse_b_temp_reg(const uint32_t *token) {
+static inline uint32_t parse_b_temp_reg(const uint32_t* token) {
   return EXTRACT(token, 2, 13, 4);
 }
 
-static inline uint32_t parse_b_swizzle_w(const uint32_t *token) {
+static inline uint32_t parse_b_swizzle_w(const uint32_t* token) {
   return EXTRACT(token, 2, 17, 2);
 }
 
-static inline uint32_t parse_b_swizzle_z(const uint32_t *token) {
+static inline uint32_t parse_b_swizzle_z(const uint32_t* token) {
   return EXTRACT(token, 2, 19, 2);
 }
 
-static inline uint32_t parse_b_swizzle_y(const uint32_t *token) {
+static inline uint32_t parse_b_swizzle_y(const uint32_t* token) {
   return EXTRACT(token, 2, 21, 2);
 }
 
-static inline uint32_t parse_b_swizzle_x(const uint32_t *token) {
+static inline uint32_t parse_b_swizzle_x(const uint32_t* token) {
   return EXTRACT(token, 2, 23, 2);
 }
 
-static inline bool parse_b_negate(const uint32_t *token) {
+static inline bool parse_b_negate(const uint32_t* token) {
   return EXTRACT(token, 2, 25, 1);
 }
 
-static inline Nv2aVshInputType parse_a_type(const uint32_t *token) {
+static inline Nv2aVshInputType parse_a_type(const uint32_t* token) {
   return EXTRACT(token, 2, 26, 2);
 }
 
-static inline uint32_t parse_a_temp_reg(const uint32_t *token) {
+static inline uint32_t parse_a_temp_reg(const uint32_t* token) {
   return EXTRACT(token, 2, 28, 4);
 }
 
-static inline bool parse_final(const uint32_t *token) {
+static inline bool parse_final(const uint32_t* token) {
   return EXTRACT(token, 3, 0, 1);
 }
 
-static inline bool parse_a0(const uint32_t *token) {
+static inline bool parse_a0(const uint32_t* token) {
   return EXTRACT(token, 3, 1, 1);
 }
 
-static inline bool parse_output_is_ilu(const uint32_t *token) {
+static inline bool parse_output_is_ilu(const uint32_t* token) {
   return EXTRACT(token, 3, 2, 1);
 }
 
-static inline uint32_t parse_output_index(const uint32_t *token) {
+static inline uint32_t parse_output_index(const uint32_t* token) {
   return EXTRACT(token, 3, 3, 8);
 }
 
-static inline bool parse_out_is_output(const uint32_t *token) {
+static inline bool parse_out_is_output(const uint32_t* token) {
   return EXTRACT(token, 3, 11, 1);
 }
 
-static inline uint32_t parse_output_writemask(const uint32_t *token) {
+static inline uint32_t parse_output_writemask(const uint32_t* token) {
   return EXTRACT(token, 3, 12, 4);
 }
 
-static inline uint32_t parse_temp_writemask_ilu(const uint32_t *token) {
+static inline uint32_t parse_temp_writemask_ilu(const uint32_t* token) {
   return EXTRACT(token, 3, 16, 4);
 }
 
-static inline uint32_t parse_out_temp_reg(const uint32_t *token) {
+static inline uint32_t parse_out_temp_reg(const uint32_t* token) {
   return EXTRACT(token, 3, 20, 4);
 }
 
-static inline uint32_t parse_temp_writemask_mac(const uint32_t *token) {
+static inline uint32_t parse_temp_writemask_mac(const uint32_t* token) {
   return EXTRACT(token, 3, 24, 4);
 }
 
-static inline Nv2aVshInputType parse_c_type(const uint32_t *token) {
+static inline Nv2aVshInputType parse_c_type(const uint32_t* token) {
   return EXTRACT(token, 3, 28, 2);
 }
 
-static inline uint32_t parse_c_temp_reg(const uint32_t *token) {
+static inline uint32_t parse_c_temp_reg(const uint32_t* token) {
   uint32_t low = EXTRACT(token, 3, 30, 2);
   uint32_t high = EXTRACT(token, 2, 0, 2);
   return ((high & 0x03) << 2) + (low & 0x03);
 }
 
-static inline void process_input(Nv2aVshInput *out, const uint32_t *token,
+static inline void process_input(Nv2aVshInput* out, const uint32_t* token,
                                  bool negate, uint32_t temp_reg, uint32_t x,
                                  uint32_t y, uint32_t z, uint32_t w) {
   switch (out->type) {
@@ -232,8 +232,8 @@ static inline void process_input(Nv2aVshInput *out, const uint32_t *token,
   out->swizzle[3] = w & 0xFF;
 }
 
-static Nv2aVshParseResult parse_inputs(Nv2aVshInput *inputs,
-                                       const uint32_t *token) {
+static Nv2aVshParseResult parse_inputs(Nv2aVshInput* inputs,
+                                       const uint32_t* token) {
   inputs[0].type = kInputTypeToGeneric[parse_a_type(token)];
   if (inputs[0].type) {
     process_input(&inputs[0], token, parse_a_negate(token),
@@ -261,8 +261,8 @@ static Nv2aVshParseResult parse_inputs(Nv2aVshInput *inputs,
   return NV2AVPR_SUCCESS;
 }
 
-static Nv2aVshParseResult parse_outputs(Nv2aVshStep *out,
-                                        const uint32_t *token) {
+static Nv2aVshParseResult parse_outputs(Nv2aVshStep* out,
+                                        const uint32_t* token) {
   out->mac.outputs[0].type = NV2ART_NONE;
   out->mac.outputs[1].type = NV2ART_NONE;
   out->ilu.outputs[0].type = NV2ART_NONE;
@@ -292,7 +292,7 @@ static Nv2aVshParseResult parse_outputs(Nv2aVshStep *out,
 
   uint32_t output_writemask = parse_output_writemask(token);
   if (output_writemask) {
-    Nv2aVshOutput *output = NULL;
+    Nv2aVshOutput* output = NULL;
     if (parse_output_is_ilu(token)) {
       output = &out->ilu.outputs[0];
       if (output->type != NV2ART_NONE) {
@@ -316,14 +316,14 @@ static Nv2aVshParseResult parse_outputs(Nv2aVshStep *out,
     }
     out->mac.outputs[0].type = NV2ART_ADDRESS;
     out->mac.outputs[0].index = 0;
-    out->mac.outputs[0].writemask = 0;
+    out->mac.outputs[0].writemask = NV2AWM_X;
   }
 
   return NV2AVPR_SUCCESS;
 }
 
-Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out,
-                                       const uint32_t *token) {
+Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep* out,
+                                       const uint32_t* token) {
   out->mac.opcode = kMACOpcodeToGeneric[parse_mac_opcode(token)];
   out->ilu.opcode = kILUOpcodeToGeneric[parse_ilu_opcode(token)];
 
@@ -414,8 +414,8 @@ Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out,
   return result;
 }
 
-Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
-                                          const uint32_t *program,
+Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram* out,
+                                          const uint32_t* program,
                                           uint32_t program_slots) {
   if (!out) {
     return NV2AVPR_BAD_OUTPUT;
@@ -429,10 +429,10 @@ Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
     return NV2AVPR_BAD_PROGRAM;
   }
 
-  out->steps = (Nv2aVshStep *)malloc(sizeof(Nv2aVshStep) * program_slots);
+  out->steps = (Nv2aVshStep*)malloc(sizeof(Nv2aVshStep) * program_slots);
 
-  Nv2aVshStep *step = out->steps;
-  const uint32_t *opcodes = program;
+  Nv2aVshStep* step = out->steps;
+  const uint32_t* opcodes = program;
 
   for (uint32_t i = 0; i < program_slots; ++i, ++step, opcodes += 4) {
     Nv2aVshParseResult result = nv2a_vsh_parse_step(step, opcodes);

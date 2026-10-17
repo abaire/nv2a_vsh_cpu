@@ -4,7 +4,7 @@
 
 BOOST_AUTO_TEST_SUITE(basic_disassembler_suite)
 
-static void clear_step(Nv2aVshStep *out) {
+static void clear_step(Nv2aVshStep* out) {
   out->is_final = false;
   memset(out->mac.outputs, 0, sizeof(out->mac.outputs));
   memset(out->mac.inputs, 0, sizeof(out->mac.inputs));
@@ -50,8 +50,8 @@ static void clear_step(Nv2aVshStep *out) {
   out->ilu.outputs[1].type = NV2ART_NONE;
 }
 
-static void check_opcode(const Nv2aVshOperation &expected,
-                         const Nv2aVshOperation &actual) {
+static void check_opcode(const Nv2aVshOperation& expected,
+                         const Nv2aVshOperation& actual) {
   for (int i = 0; i < 2; ++i) {
     BOOST_TEST_INFO_SCOPE("Output " << i);
     BOOST_TEST(expected.outputs[i].type == actual.outputs[i].type);
@@ -82,8 +82,8 @@ static void check_opcode(const Nv2aVshOperation &expected,
   }
 }
 
-static void check_result(const Nv2aVshStep &expected,
-                         const Nv2aVshStep &actual) {
+static void check_result(const Nv2aVshStep& expected,
+                         const Nv2aVshStep& actual) {
   BOOST_TEST(expected.mac.opcode == actual.mac.opcode);
   if (expected.mac.opcode != NV2AOP_NOP) {
     BOOST_TEST_INFO("MAC");
@@ -268,6 +268,7 @@ BOOST_AUTO_TEST_CASE(step_mac_arl) {
   expected.mac.opcode = NV2AOP_ARL;
   expected.mac.outputs[0].type = NV2ART_ADDRESS;
   expected.mac.outputs[0].index = 0;
+  expected.mac.outputs[0].writemask = NV2AWM_X;
 
   expected.mac.inputs[0].type = NV2ART_TEMPORARY;
   expected.mac.inputs[0].index = 0;
