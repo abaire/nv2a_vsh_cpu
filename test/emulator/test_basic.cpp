@@ -58,6 +58,30 @@ static void clear_step(Nv2aVshStep* out) {
   out->ilu.outputs[1].type = NV2ART_NONE;
 }
 
+// Sets an input that was reset by clear_step, keeping its .xyzw swizzle.
+static void set_input(Nv2aVshInput* in, Nv2aVshRegisterType type,
+                      uint32_t index) {
+  in->type = type;
+  in->index = index;
+}
+
+static void set_output(Nv2aVshOutput* out, Nv2aVshRegisterType type,
+                       uint32_t index,
+                       Nv2aVshWritemask writemask = NV2AWM_XYZW) {
+  out->type = type;
+  out->index = index;
+  out->writemask = writemask;
+}
+
+static void set_register(float* bank, uint32_t index, float x, float y, float z,
+                         float w) {
+  float* reg = bank + index * 4;
+  reg[0] = x;
+  reg[1] = y;
+  reg[2] = z;
+  reg[3] = w;
+}
+
 BOOST_AUTO_TEST_SUITE(basic_operation_suite)
 
 BOOST_AUTO_TEST_CASE(step_trivial) {
@@ -216,6 +240,196 @@ BOOST_AUTO_TEST_CASE(paired_mac_ilu_reads_before_writes) {
     BOOST_TEST_INFO(i);
     BOOST_TEST(context_dirty[i] == (i == 3));
   }
+}
+
+BOOST_AUTO_TEST_CASE(execute_stops_at_final) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 1.0f, 2.0f, 3.0f, 4.0f);
+
+  Nv2aVshStep steps[3];
+  // MOV R1, v0
+  clear_step(&steps[0]);
+  steps[0].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[0].mac.outputs[0], NV2ART_TEMPORARY, 1);
+  set_input(&steps[0].mac.inputs[0], NV2ART_INPUT, 0);
+
+  // MOV oPos, R1 (final)
+  clear_step(&steps[1]);
+  steps[1].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[1].mac.outputs[0], NV2ART_OUTPUT, NV2AOR_POS);
+  set_input(&steps[1].mac.inputs[0], NV2ART_TEMPORARY, 1);
+  steps[1].is_final = true;
+
+  // MOV oFog, v0 - must not execute since it follows the final step.
+  clear_step(&steps[2]);
+  steps[2].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[2].mac.outputs[0], NV2ART_OUTPUT, NV2AOR_FOG_COORD);
+  set_input(&steps[2].mac.inputs[0], NV2ART_INPUT, 0);
+
+  Nv2aVshProgram program;
+  program.steps = steps;
+  nv2a_vsh_emu_execute(&state, &program);
+
+  CHECK_REGISTER(state.temp_regs, 1, &full_state.input_regs[0]);
+  CHECK_REGISTER(state.output_regs, NV2AOR_POS, &full_state.input_regs[0]);
+  float zero[] = {0.0f, 0.0f, 0.0f, 0.0f};
+  CHECK_REGISTER(state.output_regs, NV2AOR_FOG_COORD, zero);
+}
+
+BOOST_AUTO_TEST_CASE(track_context_writes_multi_step) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 1.0f, 2.0f, 3.0f, 4.0f);
+  set_register(full_state.input_regs, 1, -1.0f, -2.0f, -3.0f, -4.0f);
+
+  Nv2aVshStep steps[3];
+  // MOV c2, v0
+  clear_step(&steps[0]);
+  steps[0].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[0].mac.outputs[0], NV2ART_CONTEXT, 2);
+  set_input(&steps[0].mac.inputs[0], NV2ART_INPUT, 0);
+
+  // MOV c7, v1 (final)
+  clear_step(&steps[1]);
+  steps[1].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[1].mac.outputs[0], NV2ART_CONTEXT, 7);
+  set_input(&steps[1].mac.inputs[0], NV2ART_INPUT, 1);
+  steps[1].is_final = true;
+
+  // MOV c9, v0 - must not execute since it follows the final step.
+  clear_step(&steps[2]);
+  steps[2].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[2].mac.outputs[0], NV2ART_CONTEXT, 9);
+  set_input(&steps[2].mac.inputs[0], NV2ART_INPUT, 0);
+
+  Nv2aVshProgram program;
+  program.steps = steps;
+  bool context_dirty[192] = {false};
+  nv2a_vsh_emu_execute_track_context_writes(&state, &program, context_dirty);
+
+  CHECK_REGISTER(state.context_regs, 2, &full_state.input_regs[0]);
+  CHECK_REGISTER(state.context_regs, 7, &full_state.input_regs[4]);
+  float zero[] = {0.0f, 0.0f, 0.0f, 0.0f};
+  CHECK_REGISTER(state.context_regs, 9, zero);
+  for (uint32_t i = 0; i < 192; ++i) {
+    BOOST_TEST_INFO(i);
+    BOOST_TEST(context_dirty[i] == (i == 2 || i == 7));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(ilu_only_step) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 4.0f, 0.0f, 0.0f, 0.0f);
+
+  // RCP R0, v0.x
+  Nv2aVshStep step;
+  clear_step(&step);
+  step.ilu.opcode = NV2AOP_RCP;
+  set_output(&step.ilu.outputs[0], NV2ART_TEMPORARY, 0);
+  set_input(&step.ilu.inputs[0], NV2ART_INPUT, 0);
+  nv2a_vsh_emu_apply(&state, &step);
+
+  float expected[] = {0.25f, 0.25f, 0.25f, 0.25f};
+  CHECK_REGISTER(state.temp_regs, 0, expected);
+}
+
+BOOST_AUTO_TEST_CASE(mac_second_output_marks_context_dirty) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 1.0f, 2.0f, 3.0f, 4.0f);
+
+  // MOV R2, v0 + MOV c10, v0
+  Nv2aVshStep steps[1];
+  clear_step(&steps[0]);
+  steps[0].mac.opcode = NV2AOP_MOV;
+  set_output(&steps[0].mac.outputs[0], NV2ART_TEMPORARY, 2);
+  set_output(&steps[0].mac.outputs[1], NV2ART_CONTEXT, 10);
+  set_input(&steps[0].mac.inputs[0], NV2ART_INPUT, 0);
+  steps[0].is_final = true;
+
+  Nv2aVshProgram program;
+  program.steps = steps;
+  bool context_dirty[192] = {false};
+  nv2a_vsh_emu_execute_track_context_writes(&state, &program, context_dirty);
+
+  CHECK_REGISTER(state.temp_regs, 2, &full_state.input_regs[0]);
+  CHECK_REGISTER(state.context_regs, 10, &full_state.input_regs[0]);
+  for (uint32_t i = 0; i < 192; ++i) {
+    BOOST_TEST_INFO(i);
+    BOOST_TEST(context_dirty[i] == (i == 10));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(ilu_second_output_marks_context_dirty) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 4.0f, 0.0f, 0.0f, 0.0f);
+
+  // RCP R3, v0.x + RCP c20, v0.x
+  Nv2aVshStep steps[1];
+  clear_step(&steps[0]);
+  steps[0].ilu.opcode = NV2AOP_RCP;
+  set_output(&steps[0].ilu.outputs[0], NV2ART_TEMPORARY, 3);
+  set_output(&steps[0].ilu.outputs[1], NV2ART_CONTEXT, 20);
+  set_input(&steps[0].ilu.inputs[0], NV2ART_INPUT, 0);
+  steps[0].is_final = true;
+
+  Nv2aVshProgram program;
+  program.steps = steps;
+  bool context_dirty[192] = {false};
+  nv2a_vsh_emu_execute_track_context_writes(&state, &program, context_dirty);
+
+  float expected[] = {0.25f, 0.25f, 0.25f, 0.25f};
+  CHECK_REGISTER(state.temp_regs, 3, expected);
+  CHECK_REGISTER(state.context_regs, 20, expected);
+  for (uint32_t i = 0; i < 192; ++i) {
+    BOOST_TEST_INFO(i);
+    BOOST_TEST(context_dirty[i] == (i == 20));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(r12_reads_output_position) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.output_regs, NV2AOR_POS, 1.0f, 2.0f, 3.0f, 4.0f);
+
+  // MOV oD0, R12
+  Nv2aVshStep step;
+  clear_step(&step);
+  step.mac.opcode = NV2AOP_MOV;
+  set_output(&step.mac.outputs[0], NV2ART_OUTPUT, NV2AOR_DIFFUSE);
+  set_input(&step.mac.inputs[0], NV2ART_TEMPORARY, 12);
+  nv2a_vsh_emu_apply(&state, &step);
+
+  CHECK_REGISTER(state.output_regs, NV2AOR_DIFFUSE,
+                 &full_state.output_regs[NV2AOR_POS * 4]);
+}
+
+BOOST_AUTO_TEST_CASE(xss_state_writes_external_context) {
+  Nv2aVshCPUXVSSExecutionState xss_state = {};
+  float context_regs[192 * 4] = {0.0f};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_xss_execution_state(&xss_state, context_regs);
+  BOOST_TEST(state.context_regs == context_regs);
+  set_register(xss_state.input_regs, 0, 1.0f, 2.0f, 3.0f, 4.0f);
+
+  // MOV c5, v0
+  Nv2aVshStep step;
+  clear_step(&step);
+  step.mac.opcode = NV2AOP_MOV;
+  set_output(&step.mac.outputs[0], NV2ART_CONTEXT, 5);
+  set_input(&step.mac.inputs[0], NV2ART_INPUT, 0);
+  nv2a_vsh_emu_apply(&state, &step);
+
+  CHECK_REGISTER(context_regs, 5, xss_state.input_regs);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
