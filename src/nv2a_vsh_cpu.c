@@ -11,11 +11,11 @@
 #define _W 3
 #define COMP(array, index, component) (array[(index) * 4 + component])
 
-void nv2a_vsh_cpu_mov(float *out, const float *inputs) {
+void nv2a_vsh_cpu_mov(float* out, const float* inputs) {
   memcpy(out, inputs, sizeof(float) * 4);
 }
 
-void nv2a_vsh_cpu_arl(float *out, const float *inputs) {
+void nv2a_vsh_cpu_arl(float* out, const float* inputs) {
   float val = floorf(COMP(inputs, 0, _X) + 0.001f);
   out[0] = val;
   out[1] = val;
@@ -34,25 +34,29 @@ static inline float fix_inf_mult(float a, float b) {
   return *(float*)&fixed;
 }
 
-void nv2a_vsh_cpu_mul(float *out, const float *inputs) {
+void nv2a_vsh_cpu_mul(float* out, const float* inputs) {
   out[0] = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X));
   out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y));
   out[2] = fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z));
   out[3] = fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
 }
 
-void nv2a_vsh_cpu_add(float *out, const float *inputs) {
+void nv2a_vsh_cpu_add(float* out, const float* inputs) {
   out[0] = COMP(inputs, 0, _X) + COMP(inputs, 1, _X);
   out[1] = COMP(inputs, 0, _Y) + COMP(inputs, 1, _Y);
   out[2] = COMP(inputs, 0, _Z) + COMP(inputs, 1, _Z);
   out[3] = COMP(inputs, 0, _W) + COMP(inputs, 1, _W);
 }
 
-void nv2a_vsh_cpu_mad(float *out, const float *inputs) {
-  out[0] = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) + COMP(inputs, 2, _X);
-  out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) + COMP(inputs, 2, _Y);
-  out[2] = fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + COMP(inputs, 2, _Z);
-  out[3] = fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W)) + COMP(inputs, 2, _W);
+void nv2a_vsh_cpu_mad(float* out, const float* inputs) {
+  out[0] = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
+           COMP(inputs, 2, _X);
+  out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
+           COMP(inputs, 2, _Y);
+  out[2] = fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) +
+           COMP(inputs, 2, _Z);
+  out[3] = fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W)) +
+           COMP(inputs, 2, _W);
 }
 
 static inline float fix_inf(float in) {
@@ -64,7 +68,7 @@ static inline float fix_inf(float in) {
   return *(float*)&fixed;
 }
 
-void nv2a_vsh_cpu_dp3(float *out, const float *inputs) {
+void nv2a_vsh_cpu_dp3(float* out, const float* inputs) {
   float result = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
                  fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
                  fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z));
@@ -75,10 +79,11 @@ void nv2a_vsh_cpu_dp3(float *out, const float *inputs) {
   out[3] = result;
 }
 
-void nv2a_vsh_cpu_dph(float *out, const float *inputs) {
+void nv2a_vsh_cpu_dph(float* out, const float* inputs) {
   float result = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
                  fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
-                 fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + COMP(inputs, 1, _W);
+                 fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) +
+                 COMP(inputs, 1, _W);
   result = fix_inf(result);
   out[0] = result;
   out[1] = result;
@@ -86,12 +91,11 @@ void nv2a_vsh_cpu_dph(float *out, const float *inputs) {
   out[3] = result;
 }
 
-void nv2a_vsh_cpu_dp4(float *out, const float *inputs) {
-  float result =
-      fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
-      fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
-      fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) +
-      fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
+void nv2a_vsh_cpu_dp4(float* out, const float* inputs) {
+  float result = fix_inf_mult(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) +
+                 fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) +
+                 fix_inf_mult(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) +
+                 fix_inf_mult(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
   result = fix_inf(result);
   out[0] = result;
   out[1] = result;
@@ -99,33 +103,33 @@ void nv2a_vsh_cpu_dp4(float *out, const float *inputs) {
   out[3] = result;
 }
 
-void nv2a_vsh_cpu_dst(float *out, const float *inputs) {
+void nv2a_vsh_cpu_dst(float* out, const float* inputs) {
   out[0] = 1.0f;
   out[1] = fix_inf_mult(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y));
   out[2] = COMP(inputs, 0, _Z);
   out[3] = COMP(inputs, 1, _W);
 }
 
-void nv2a_vsh_cpu_min(float *out, const float *inputs) {
-  out[0] =
-      COMP(inputs, 0, _X) < COMP(inputs, 1, _X) ? COMP(inputs, 0, _X) : COMP(inputs, 1, _X);
-  out[1] =
-      COMP(inputs, 0, _Y) < COMP(inputs, 1, _Y) ? COMP(inputs, 0, _Y) : COMP(inputs, 1, _Y);
-  out[2] =
-      COMP(inputs, 0, _Z) < COMP(inputs, 1, _Z) ? COMP(inputs, 0, _Z) : COMP(inputs, 1, _Z);
-  out[3] =
-      COMP(inputs, 0, _W) < COMP(inputs, 1, _W) ? COMP(inputs, 0, _W) : COMP(inputs, 1, _W);
+void nv2a_vsh_cpu_min(float* out, const float* inputs) {
+  out[0] = COMP(inputs, 0, _X) < COMP(inputs, 1, _X) ? COMP(inputs, 0, _X)
+                                                     : COMP(inputs, 1, _X);
+  out[1] = COMP(inputs, 0, _Y) < COMP(inputs, 1, _Y) ? COMP(inputs, 0, _Y)
+                                                     : COMP(inputs, 1, _Y);
+  out[2] = COMP(inputs, 0, _Z) < COMP(inputs, 1, _Z) ? COMP(inputs, 0, _Z)
+                                                     : COMP(inputs, 1, _Z);
+  out[3] = COMP(inputs, 0, _W) < COMP(inputs, 1, _W) ? COMP(inputs, 0, _W)
+                                                     : COMP(inputs, 1, _W);
 }
 
-void nv2a_vsh_cpu_max(float *out, const float *inputs) {
-  out[0] =
-      COMP(inputs, 0, _X) > COMP(inputs, 1, _X) ? COMP(inputs, 0, _X) : COMP(inputs, 1, _X);
-  out[1] =
-      COMP(inputs, 0, _Y) > COMP(inputs, 1, _Y) ? COMP(inputs, 0, _Y) : COMP(inputs, 1, _Y);
-  out[2] =
-      COMP(inputs, 0, _Z) > COMP(inputs, 1, _Z) ? COMP(inputs, 0, _Z) : COMP(inputs, 1, _Z);
-  out[3] =
-      COMP(inputs, 0, _W) > COMP(inputs, 1, _W) ? COMP(inputs, 0, _W) : COMP(inputs, 1, _W);
+void nv2a_vsh_cpu_max(float* out, const float* inputs) {
+  out[0] = COMP(inputs, 0, _X) > COMP(inputs, 1, _X) ? COMP(inputs, 0, _X)
+                                                     : COMP(inputs, 1, _X);
+  out[1] = COMP(inputs, 0, _Y) > COMP(inputs, 1, _Y) ? COMP(inputs, 0, _Y)
+                                                     : COMP(inputs, 1, _Y);
+  out[2] = COMP(inputs, 0, _Z) > COMP(inputs, 1, _Z) ? COMP(inputs, 0, _Z)
+                                                     : COMP(inputs, 1, _Z);
+  out[3] = COMP(inputs, 0, _W) > COMP(inputs, 1, _W) ? COMP(inputs, 0, _W)
+                                                     : COMP(inputs, 1, _W);
 }
 
 static inline float nv2a_less_than(float a, float b) {
@@ -143,21 +147,25 @@ static inline float nv2a_less_than(float a, float b) {
   return 0.0f;
 }
 
-void nv2a_vsh_cpu_slt(float *out, const float *inputs) {
+void nv2a_vsh_cpu_slt(float* out, const float* inputs) {
   out[0] = nv2a_less_than(COMP(inputs, 0, _X), COMP(inputs, 1, _X));
   out[1] = nv2a_less_than(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y));
   out[2] = nv2a_less_than(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z));
   out[3] = nv2a_less_than(COMP(inputs, 0, _W), COMP(inputs, 1, _W));
 }
 
-void nv2a_vsh_cpu_sge(float *out, const float *inputs) {
-  out[0] = -1.0f * nv2a_less_than(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) + 1.0f;
-  out[1] = -1.0f * nv2a_less_than(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) + 1.0f;
-  out[2] = -1.0f * nv2a_less_than(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + 1.0f;
-  out[3] = -1.0f * nv2a_less_than(COMP(inputs, 0, _W), COMP(inputs, 1, _W)) + 1.0f;
+void nv2a_vsh_cpu_sge(float* out, const float* inputs) {
+  out[0] =
+      -1.0f * nv2a_less_than(COMP(inputs, 0, _X), COMP(inputs, 1, _X)) + 1.0f;
+  out[1] =
+      -1.0f * nv2a_less_than(COMP(inputs, 0, _Y), COMP(inputs, 1, _Y)) + 1.0f;
+  out[2] =
+      -1.0f * nv2a_less_than(COMP(inputs, 0, _Z), COMP(inputs, 1, _Z)) + 1.0f;
+  out[3] =
+      -1.0f * nv2a_less_than(COMP(inputs, 0, _W), COMP(inputs, 1, _W)) + 1.0f;
 }
 
-void nv2a_vsh_cpu_rcp(float *out, const float *inputs) {
+void nv2a_vsh_cpu_rcp(float* out, const float* inputs) {
   float in = COMP(inputs, 0, _X);
   float result;
   if (in == 1.0f) {
@@ -181,7 +189,7 @@ void nv2a_vsh_cpu_rcp(float *out, const float *inputs) {
 static const uint32_t kRCCMaxInt = 0x5F800000;
 static const uint32_t kRCCMaxNegInt = 0xDF800000;
 
-void nv2a_vsh_cpu_rcc(float *out, const float *inputs) {
+void nv2a_vsh_cpu_rcc(float* out, const float* inputs) {
   float result;
   float in = COMP(inputs, 0, _X);
   if (in == 1.0f) {
@@ -209,7 +217,7 @@ void nv2a_vsh_cpu_rcc(float *out, const float *inputs) {
   out[3] = result;
 }
 
-void nv2a_vsh_cpu_rsq(float *out, const float *inputs) {
+void nv2a_vsh_cpu_rsq(float* out, const float* inputs) {
   float in = fabsf(inputs[0]);
   float result;
   if (in == 1.0f) {
@@ -226,7 +234,7 @@ void nv2a_vsh_cpu_rsq(float *out, const float *inputs) {
   out[3] = result;
 }
 
-void nv2a_vsh_cpu_exp(float *out, const float *inputs) {
+void nv2a_vsh_cpu_exp(float* out, const float* inputs) {
   float tmp = floorf(inputs[0]);
   out[0] = powf(2.0f, tmp);
   out[1] = inputs[0] - tmp;
@@ -234,7 +242,7 @@ void nv2a_vsh_cpu_exp(float *out, const float *inputs) {
   out[3] = 1.0f;
 }
 
-void nv2a_vsh_cpu_log(float *out, const float *inputs) {
+void nv2a_vsh_cpu_log(float* out, const float* inputs) {
   // TODO: Validate this on HW.
   float tmp = fabsf(inputs[0]);
   if (tmp == 0.0f) {
@@ -260,7 +268,7 @@ void nv2a_vsh_cpu_log(float *out, const float *inputs) {
   out[3] = 1.0f;
 }
 
-void nv2a_vsh_cpu_lit(float *out, const float *inputs) {
+void nv2a_vsh_cpu_lit(float* out, const float* inputs) {
   static const float kMax = 127.9961f;
 
   out[0] = 1.0f;
@@ -268,9 +276,8 @@ void nv2a_vsh_cpu_lit(float *out, const float *inputs) {
   out[2] = 0.0f;
   out[3] = 1.0f;
 
-  float power = inputs[3] < -kMax
-                    ? -kMax
-                    : (inputs[3] > kMax ? kMax : inputs[3]);
+  float power =
+      inputs[3] < -kMax ? -kMax : (inputs[3] > kMax ? kMax : inputs[3]);
   if (inputs[0] > 0.0f) {
     out[1] = inputs[0];
     if (inputs[1] > 0.0f) {
