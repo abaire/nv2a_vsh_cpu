@@ -69,6 +69,22 @@ static inline void fetch_value(float* out, const Nv2aVshExecutionState* state,
   set_register(out, in, input->swizzle, input->is_negated);
 }
 
+// Writes to oFog assign the most significant masked component of the result to
+// oFog.x (e.g., writing to oFog.yzw sets x to the y component of the result).
+static inline void apply_fog_writemask(float* outreg, const float* result,
+                                       Nv2aVshWritemask writemask) {
+  if (writemask & NV2AWM_X) {
+    return;
+  }
+  if (writemask & NV2AWM_Y) {
+    outreg[0] = result[1];
+  } else if (writemask & NV2AWM_Z) {
+    outreg[0] = result[2];
+  } else if (writemask & NV2AWM_W) {
+    outreg[0] = result[3];
+  }
+}
+
 static inline void apply_operation(Nv2aVshExecutionState* state,
                                    const Nv2aVshOperation* op,
                                    const float* inputs) {
@@ -124,6 +140,10 @@ static inline void apply_operation(Nv2aVshExecutionState* state,
     }
     if (out->writemask & NV2AWM_W) {
       outreg[3] = result[3];
+    }
+
+    if (out->type == NV2ART_OUTPUT && out->index == NV2AOR_FOG_COORD) {
+      apply_fog_writemask(outreg, result, out->writemask);
     }
   }
 }

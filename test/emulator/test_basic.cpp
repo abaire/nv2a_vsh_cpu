@@ -432,4 +432,64 @@ BOOST_AUTO_TEST_CASE(xss_state_writes_external_context) {
   CHECK_REGISTER(context_regs, 5, xss_state.input_regs);
 }
 
+BOOST_AUTO_TEST_CASE(fog_write_uses_most_significant_masked_component) {
+  struct TestCase {
+    Nv2aVshWritemask writemask;
+    float expected[4];
+  };
+  static constexpr TestCase kTests[] = {
+      {NV2AWM_XYZW, {1.0f, 2.0f, 3.0f, 4.0f}},
+      {NV2AWM_XZ, {1.0f, -1.0f, 3.0f, -1.0f}},
+      {NV2AWM_YZW, {2.0f, 2.0f, 3.0f, 4.0f}},
+      {NV2AWM_Y, {2.0f, 2.0f, -1.0f, -1.0f}},
+      {NV2AWM_ZW, {3.0f, -1.0f, 3.0f, 4.0f}},
+      {NV2AWM_Z, {3.0f, -1.0f, 3.0f, -1.0f}},
+      {NV2AWM_W, {4.0f, -1.0f, -1.0f, 4.0f}},
+  };
+
+  for (const auto& test : kTests) {
+    BOOST_TEST_INFO(test.writemask);
+    Nv2aVshCPUFullExecutionState full_state = {};
+    Nv2aVshExecutionState state =
+        nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+    set_register(full_state.input_regs, 0, 1.0f, 2.0f, 3.0f, 4.0f);
+    set_register(full_state.output_regs, NV2AOR_FOG_COORD, -1.0f, -1.0f, -1.0f,
+                 -1.0f);
+
+    // MOV oFog.<mask>, v0
+    Nv2aVshStep step;
+    clear_step(&step);
+    step.mac.opcode = NV2AOP_MOV;
+    set_output(&step.mac.outputs[0], NV2ART_OUTPUT, NV2AOR_FOG_COORD,
+               test.writemask);
+    set_input(&step.mac.inputs[0], NV2ART_INPUT, 0);
+    nv2a_vsh_emu_apply(&state, &step);
+
+    CHECK_REGISTER(state.output_regs, NV2AOR_FOG_COORD, test.expected);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(
+    fog_write_from_ilu_uses_most_significant_masked_component) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 1.0f, 2.0f, 4.0f, 8.0f);
+
+  // RCP oFog.w, v0.z
+  Nv2aVshStep step;
+  clear_step(&step);
+  step.ilu.opcode = NV2AOP_RCP;
+  set_output(&step.ilu.outputs[0], NV2ART_OUTPUT, NV2AOR_FOG_COORD, NV2AWM_W);
+  set_input(&step.ilu.inputs[0], NV2ART_INPUT, 0);
+  step.ilu.inputs[0].swizzle[0] = NV2ASW_Z;
+  step.ilu.inputs[0].swizzle[1] = NV2ASW_Z;
+  step.ilu.inputs[0].swizzle[2] = NV2ASW_Z;
+  step.ilu.inputs[0].swizzle[3] = NV2ASW_Z;
+  nv2a_vsh_emu_apply(&state, &step);
+
+  float expected[] = {0.25f, 0.0f, 0.0f, 0.25f};
+  CHECK_REGISTER(state.output_regs, NV2AOR_FOG_COORD, expected);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
