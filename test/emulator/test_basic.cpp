@@ -154,4 +154,68 @@ BOOST_AUTO_TEST_CASE(arl_relative_context_read) {
                  &full_state.context_regs[5 * 4]);
 }
 
+BOOST_AUTO_TEST_CASE(paired_mac_ilu_reads_before_writes) {
+  Nv2aVshCPUFullExecutionState full_state;
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  memset(full_state.context_regs, 0, sizeof(full_state.context_regs));
+  float* v0 = &full_state.input_regs[0 * 4];
+  v0[0] = 2.0f;
+  v0[1] = 3.0f;
+  v0[2] = 4.0f;
+  v0[3] = 5.0f;
+  float* v1 = &full_state.input_regs[1 * 4];
+  v1[0] = 0.5f;
+  v1[1] = 2.0f;
+  v1[2] = 0.25f;
+  v1[3] = -1.0f;
+  float* r0 = &full_state.temp_regs[0 * 4];
+  r0[0] = 4.0f;
+  r0[1] = 0.0f;
+  r0[2] = 0.0f;
+  r0[3] = 0.0f;
+
+  // MUL R0.xyzw, v0, v1 + RCP c3.xyzw, R0.x
+  Nv2aVshStep steps[1];
+  Nv2aVshStep* step = &steps[0];
+  clear_step(step);
+  step->mac.opcode = NV2AOP_MUL;
+  step->mac.outputs[0].type = NV2ART_TEMPORARY;
+  step->mac.outputs[0].index = 0;
+  step->mac.outputs[0].writemask = NV2AWM_XYZW;
+  step->mac.inputs[0].type = NV2ART_INPUT;
+  step->mac.inputs[0].index = 0;
+  step->mac.inputs[1].type = NV2ART_INPUT;
+  step->mac.inputs[1].index = 1;
+
+  step->ilu.opcode = NV2AOP_RCP;
+  step->ilu.outputs[0].type = NV2ART_CONTEXT;
+  step->ilu.outputs[0].index = 3;
+  step->ilu.outputs[0].writemask = NV2AWM_XYZW;
+  step->ilu.inputs[0].type = NV2ART_TEMPORARY;
+  step->ilu.inputs[0].index = 0;
+  step->ilu.inputs[0].swizzle[1] = NV2ASW_X;
+  step->ilu.inputs[0].swizzle[2] = NV2ASW_X;
+  step->ilu.inputs[0].swizzle[3] = NV2ASW_X;
+  step->is_final = true;
+
+  Nv2aVshProgram program;
+  program.steps = steps;
+
+  bool context_dirty[192] = {false};
+  nv2a_vsh_emu_execute_track_context_writes(&state, &program, context_dirty);
+
+  float expected_r0[] = {1.0f, 6.0f, 1.0f, -5.0f};
+  CHECK_REGISTER(state.temp_regs, 0, expected_r0);
+
+  // The ILU must see R0 as it was before the MAC wrote to it (1/4, not 1/1).
+  float expected_c3[] = {0.25f, 0.25f, 0.25f, 0.25f};
+  CHECK_REGISTER(state.context_regs, 3, expected_c3);
+
+  for (uint32_t i = 0; i < 192; ++i) {
+    BOOST_TEST_INFO(i);
+    BOOST_TEST(context_dirty[i] == (i == 3));
+  }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
