@@ -692,4 +692,73 @@ BOOST_AUTO_TEST_CASE(step_ilu_rcp_r6_r12) {
   check_result(expected, actual);
 }
 
+BOOST_AUTO_TEST_CASE(step_invalid_mac_opcode_fails) {
+  // MOV oT2.xyzw, v11 with the MAC opcode set to the unassigned values 14 and
+  // 15.
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x01C0161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x01E0161B, 0x0836106C, 0x2070F858},
+  };
+
+  Nv2aVshStep actual;
+  BOOST_TEST(nv2a_vsh_parse_step(&actual, kTest[0]) == NV2AVPR_BAD_MAC_OPCODE);
+  BOOST_TEST(nv2a_vsh_parse_step(&actual, kTest[1]) == NV2AVPR_BAD_MAC_OPCODE);
+}
+
+BOOST_AUTO_TEST_CASE(program_without_final_fails) {
+  // MOV oT2.xyzw, v11
+  // MOV oT2.xyzw, v11
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+  };
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kTest[0], 2);
+
+  BOOST_TEST(result == NV2AVPR_NO_FINAL_MARKER);
+  BOOST_TEST(program.steps == nullptr);
+}
+
+BOOST_AUTO_TEST_CASE(program_with_final_succeeds) {
+  // MOV oT2.xyzw, v11
+  // MOV oT2.xyzw, v11 (final)
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F858},
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+  };
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kTest[0], 2);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  BOOST_TEST(program.steps != nullptr);
+  BOOST_TEST(!program.steps[0].is_final);
+  BOOST_TEST(program.steps[1].is_final);
+
+  nv2a_vsh_program_destroy(&program);
+}
+
+BOOST_AUTO_TEST_CASE(program_ignores_steps_after_final) {
+  // MOV oT2.xyzw, v11 (final)
+  // Invalid ARL with a conflicting output write.
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0020161B, 0x0836106C, 0x2070F859},
+      {0x00000000, 0x01A0161B, 0x0836106C, 0x2070F858},
+  };
+
+  Nv2aVshStep invalid_step;
+  BOOST_TEST(nv2a_vsh_parse_step(&invalid_step, kTest[1]) ==
+             NV2AVPR_ARL_CONFLICT);
+
+  Nv2aVshProgram program;
+  auto result = nv2a_vsh_parse_program(&program, kTest[0], 2);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  BOOST_TEST(program.steps != nullptr);
+  BOOST_TEST(program.steps[0].is_final);
+
+  nv2a_vsh_program_destroy(&program);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

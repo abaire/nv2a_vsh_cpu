@@ -324,7 +324,13 @@ static Nv2aVshParseResult parse_outputs(Nv2aVshStep* out,
 
 Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep* out,
                                        const uint32_t* token) {
-  out->mac.opcode = kMACOpcodeToGeneric[parse_mac_opcode(token)];
+  Nv2aVshMACOpcode mac_opcode = parse_mac_opcode(token);
+  if (mac_opcode >=
+      sizeof(kMACOpcodeToGeneric) / sizeof(kMACOpcodeToGeneric[0])) {
+    return NV2AVPR_BAD_MAC_OPCODE;
+  }
+
+  out->mac.opcode = kMACOpcodeToGeneric[mac_opcode];
   out->ilu.opcode = kILUOpcodeToGeneric[parse_ilu_opcode(token)];
 
   out->mac.inputs[0].type = NV2ART_NONE;
@@ -440,7 +446,12 @@ Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram* out,
       nv2a_vsh_program_destroy(out);
       return result;
     }
+
+    if (step->is_final) {
+      return NV2AVPR_SUCCESS;
+    }
   }
 
-  return NV2AVPR_SUCCESS;
+  nv2a_vsh_program_destroy(out);
+  return NV2AVPR_NO_FINAL_MARKER;
 }

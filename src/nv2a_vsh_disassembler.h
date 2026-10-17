@@ -119,7 +119,7 @@ typedef struct Nv2aVshStep_ {
 } Nv2aVshStep;
 
 typedef struct Nv2aVshProgram_ {
-  Nv2aVshStep *steps;
+  Nv2aVshStep* steps;
 } Nv2aVshProgram;
 
 typedef enum Nv2aVshParseResult_ {
@@ -130,12 +130,13 @@ typedef enum Nv2aVshParseResult_ {
   NV2AVPR_ARL_CONFLICT,
   NV2AVPR_BAD_MAC_OPCODE,
   NV2AVPR_BAD_ILU_OPCODE,
+  NV2AVPR_NO_FINAL_MARKER,
 } Nv2aVshParseResult;
 
-void nv2a_vsh_program_destroy(Nv2aVshProgram *program);
+void nv2a_vsh_program_destroy(Nv2aVshProgram* program);
 
 // Disassemble the given token (which must be 4 uint32_t's) into an Nv2aVshStep.
-Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out, const uint32_t *token);
+Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep* out, const uint32_t* token);
 
 // Disassemble the given array of nv2a transform opcodes into an
 // Nv2aVshProgram representation.
@@ -146,10 +147,15 @@ Nv2aVshParseResult nv2a_vsh_parse_step(Nv2aVshStep *out, const uint32_t *token);
 //           processed.
 // program_slots - Number of slots in `program` (each slot is 4 integers).
 //
+// Parsing stops at the first step marked as final; any subsequent slots are
+// ignored and the corresponding entries in `out->steps` are left
+// uninitialized. Returns NV2AVPR_NO_FINAL_MARKER if none of the steps in
+// `program` is marked as final.
+//
 // Note: On success, the caller is responsible for calling
 //       `nv2a_vsh_program_destroy` to clean up the allocated program.
-Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram *out,
-                                          const uint32_t *program,
+Nv2aVshParseResult nv2a_vsh_parse_program(Nv2aVshProgram* out,
+                                          const uint32_t* program,
                                           uint32_t program_slots);
 
 #ifdef __cplusplus
