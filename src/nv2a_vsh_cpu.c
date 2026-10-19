@@ -257,7 +257,7 @@ void nv2a_vsh_cpu_log(float* out, const float* inputs) {
     // frexpf returns values that do not match nv2a, so the exponent is
     // extracted manually.
     uint32_t tmp_int = *(uint32_t*)&tmp;
-    uint32_t exponent = ((tmp_int >> 23) & 0xFF) - 127;
+    int32_t exponent = (int32_t)((tmp_int >> 23) & 0xFF) - 127;
     uint32_t mantissa = (tmp_int & 0x7FFFFF) | 0x3F800000;
 
     out[0] = (float)exponent;

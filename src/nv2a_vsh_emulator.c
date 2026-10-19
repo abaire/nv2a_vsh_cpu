@@ -58,11 +58,17 @@ static inline void fetch_value(float* out, const Nv2aVshExecutionState* state,
       break;
 
     case NV2ART_CONTEXT: {
-      uint32_t offset = input->index;
+      int64_t offset = input->index;
       if (input->is_relative) {
-        offset += (int)state->address_reg[0];
+        offset += (int64_t)state->address_reg[0];
       }
-      in = &state->context_regs[offset * 4];
+      // Reads outside of the constant file return zero on hardware.
+      if (offset < 0 || offset >= 192) {
+        static const float kZero[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        in = kZero;
+      } else {
+        in = &state->context_regs[offset * 4];
+      }
     } break;
   }
 
