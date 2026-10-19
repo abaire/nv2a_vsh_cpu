@@ -1,4 +1,5 @@
 #include <boost/test/unit_test.hpp>
+#include <iterator>
 
 #include "nv2a_vsh_disassembler.h"
 #include "nv2a_vsh_emulator.h"
@@ -490,6 +491,126 @@ BOOST_AUTO_TEST_CASE(
 
   float expected[] = {0.25f, 0.0f, 0.0f, 0.25f};
   CHECK_REGISTER(state.output_regs, NV2AOR_FOG_COORD, expected);
+}
+
+// Mirrors the A0 probe shaders from nxdk_low_level_nv2a_tests vsh_tests:
+//   ARL A0, v9.x
+//   MOV oD0, c[A0 + static_offset]
+// with c[i] = (i / 255, 1, 0.5, 1). Hardware returns (0, 0, 0, 0) for any
+// read whose A0 + static_offset falls outside [0, 191].
+static void check_a0_relative_reads(const float* a0_values, size_t count,
+                                    uint32_t static_offset) {
+  for (size_t i = 0; i < count; ++i) {
+    const float a0 = a0_values[i];
+    BOOST_TEST_CONTEXT("A0 = " << a0 << " + " << static_offset) {
+      Nv2aVshCPUFullExecutionState full_state = {};
+      Nv2aVshExecutionState state =
+          nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+      for (uint32_t c = 0; c < 192; ++c) {
+        set_register(full_state.context_regs, c, static_cast<float>(c) / 255.0f,
+                     1.0f, 0.5f, 1.0f);
+      }
+      set_register(full_state.input_regs, 9, a0, 0.0f, 0.0f, 1.0f);
+      set_register(full_state.output_regs, NV2AOR_DIFFUSE, -1.0f, -1.0f, -1.0f,
+                   -1.0f);
+
+      Nv2aVshStep step;
+      clear_step(&step);
+      step.mac.opcode = NV2AOP_ARL;
+      set_output(&step.mac.outputs[0], NV2ART_ADDRESS, 0, NV2AWM_X);
+      set_input(&step.mac.inputs[0], NV2ART_INPUT, 9);
+      nv2a_vsh_emu_apply(&state, &step);
+
+      clear_step(&step);
+      step.mac.opcode = NV2AOP_MOV;
+      set_output(&step.mac.outputs[0], NV2ART_OUTPUT, NV2AOR_DIFFUSE);
+      set_input(&step.mac.inputs[0], NV2ART_CONTEXT, static_offset);
+      step.mac.inputs[0].is_relative = true;
+      nv2a_vsh_emu_apply(&state, &step);
+
+      const int64_t effective = static_cast<int64_t>(a0) + static_offset;
+      float expected[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+      if (effective >= 0 && effective < 192) {
+        set_register(expected, 0, static_cast<float>(effective) / 255.0f, 1.0f,
+                     0.5f, 1.0f);
+      }
+      CHECK_REGISTER(state.output_regs, NV2AOR_DIFFUSE, expected);
+    }
+  }
+}
+
+BOOST_AUTO_TEST_CASE(a0_relative_read_before_constant_file_returns_zero) {
+  static constexpr float kA0Values[] = {
+      0,    -1,   -2,   -96,  -191, -192,  -193,
+      -256, -257, -384, -512, -513, -4096, -65536,
+  };
+  check_a0_relative_reads(kA0Values, std::size(kA0Values), 0);
+}
+
+BOOST_AUTO_TEST_CASE(a0_relative_read_beyond_constant_file_returns_zero) {
+  static constexpr float kA0Values[] = {
+      0,   1,   95,  96,   190,  191,  192,   193,   200,
+      255, 256, 257, 383,  384,  447,  448,   511,   512,
+      513, 767, 768, 1000, 4095, 4096, 65535, 65536, 1000000,
+  };
+  check_a0_relative_reads(kA0Values, std::size(kA0Values), 0);
+}
+
+BOOST_AUTO_TEST_CASE(
+    a0_relative_read_with_offset_beyond_constant_file_returns_zero) {
+  static constexpr float kA0Values[] = {
+      -191, -96, -1, 0, 1, 2, 9, 65, 256, 4096, 65536,
+  };
+  check_a0_relative_reads(kA0Values, std::size(kA0Values), 191);
+}
+
+// Mirrors vsh_log.vsh from nxdk_low_level_nv2a_tests:
+//   LOGP R0, v9.x
+//   ADD oD0, R0.xxxx, c[0].zzzz
+// Hardware produces a negative exponent for inputs in (0, 1).
+BOOST_AUTO_TEST_CASE(log_negative_exponent) {
+  struct TestCase {
+    float input;
+    float expected_exponent;
+  };
+  static constexpr TestCase kTests[] = {
+      {0.75f, -1.0f},   {0.5f, -1.0f}, {0.25f, -2.0f},
+      {0.001f, -10.0f}, {1.0f, 0.0f},  {2.0f, 1.0f},
+  };
+
+  for (const auto& test : kTests) {
+    BOOST_TEST_CONTEXT("LOG(" << test.input << ")") {
+      Nv2aVshCPUFullExecutionState full_state = {};
+      Nv2aVshExecutionState state =
+          nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+      set_register(full_state.context_regs, 0, 0.0f, 1.0f, 128.0f / 255.0f,
+                   1.0f);
+      set_register(full_state.input_regs, 9, test.input, 0.0f, 0.0f, 1.0f);
+
+      Nv2aVshStep step;
+      clear_step(&step);
+      step.ilu.opcode = NV2AOP_LOG;
+      set_output(&step.ilu.outputs[0], NV2ART_TEMPORARY, 0);
+      set_input(&step.ilu.inputs[0], NV2ART_INPUT, 9);
+      nv2a_vsh_emu_apply(&state, &step);
+
+      BOOST_TEST(state.temp_regs[0] == test.expected_exponent);
+
+      clear_step(&step);
+      step.mac.opcode = NV2AOP_ADD;
+      set_output(&step.mac.outputs[0], NV2ART_OUTPUT, NV2AOR_DIFFUSE);
+      set_input(&step.mac.inputs[0], NV2ART_TEMPORARY, 0);
+      memset(step.mac.inputs[0].swizzle, NV2ASW_X, 4);
+      set_input(&step.mac.inputs[1], NV2ART_CONTEXT, 0);
+      memset(step.mac.inputs[1].swizzle, NV2ASW_Z, 4);
+      nv2a_vsh_emu_apply(&state, &step);
+
+      const float expected_sum = test.expected_exponent + 128.0f / 255.0f;
+      float expected[] = {expected_sum, expected_sum, expected_sum,
+                          expected_sum};
+      CHECK_REGISTER(state.output_regs, NV2AOR_DIFFUSE, expected);
+    }
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
