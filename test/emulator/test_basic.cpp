@@ -243,6 +243,52 @@ BOOST_AUTO_TEST_CASE(paired_mac_ilu_reads_before_writes) {
   }
 }
 
+BOOST_AUTO_TEST_CASE(paired_mac_r1_write_is_suppressed) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 0.75f, 0.5f, 2.0f, 3.0f);
+  set_register(full_state.temp_regs, 1, 0.25f, 0.0f, 0.0f, 0.0f);
+
+  // MOV R1.x, v0 + MOV R1.y, v0 (final)
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0220001B, 0x0836006C, 0x28140001},
+  };
+
+  Nv2aVshProgram program;
+  BOOST_TEST(nv2a_vsh_parse_program(&program, kProgram[0],
+                                    std::size(kProgram)) == NV2AVPR_SUCCESS);
+  nv2a_vsh_emu_execute(&state, &program);
+  nv2a_vsh_program_destroy(&program);
+
+  float expected_r1[] = {0.25f, 0.5f, 0.0f, 0.0f};
+  CHECK_REGISTER(state.temp_regs, 1, expected_r1);
+}
+
+BOOST_AUTO_TEST_CASE(paired_ilu_temp_write_redirected_to_r1) {
+  Nv2aVshCPUFullExecutionState full_state = {};
+  Nv2aVshExecutionState state =
+      nv2a_vsh_emu_initialize_full_execution_state(&full_state);
+  set_register(full_state.input_regs, 0, 0.75f, 0.5f, 2.0f, 3.0f);
+  set_register(full_state.temp_regs, 1, 0.25f, 0.0f, 0.0f, 0.0f);
+
+  // MOV R2.x, v0 + MOV R2.y, v0 (final)
+  static constexpr uint32_t kProgram[][4] = {
+      {0x00000000, 0x0220001B, 0x0836006C, 0x28240001},
+  };
+
+  Nv2aVshProgram program;
+  BOOST_TEST(nv2a_vsh_parse_program(&program, kProgram[0],
+                                    std::size(kProgram)) == NV2AVPR_SUCCESS);
+  nv2a_vsh_emu_execute(&state, &program);
+  nv2a_vsh_program_destroy(&program);
+
+  float expected_r1[] = {0.25f, 0.5f, 0.0f, 0.0f};
+  CHECK_REGISTER(state.temp_regs, 1, expected_r1);
+  float expected_r2[] = {0.75f, 0.0f, 0.0f, 0.0f};
+  CHECK_REGISTER(state.temp_regs, 2, expected_r2);
+}
+
 BOOST_AUTO_TEST_CASE(execute_stops_at_final) {
   Nv2aVshCPUFullExecutionState full_state = {};
   Nv2aVshExecutionState state =
