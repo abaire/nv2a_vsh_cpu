@@ -488,6 +488,69 @@ BOOST_AUTO_TEST_CASE(step_paired_dp4_rsq) {
   check_result(expected, actual);
 }
 
+BOOST_AUTO_TEST_CASE(step_paired_mac_r1_write_is_suppressed) {
+  // MOV R1.x, v0 + MOV R1.y, v0
+  // Hardware discards temporary register writes to R1 from the MAC when an ILU
+  // operation is paired.
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0220001B, 0x0836006C, 0x28140000},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.mac.opcode = NV2AOP_MOV;
+  expected.mac.inputs[0].type = NV2ART_INPUT;
+  expected.mac.inputs[0].index = 0;
+
+  expected.ilu.opcode = NV2AOP_MOV;
+  expected.ilu.outputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.outputs[0].index = 1;
+  expected.ilu.outputs[0].writemask = NV2AWM_Y;
+
+  expected.ilu.inputs[0].type = NV2ART_INPUT;
+  expected.ilu.inputs[0].index = 0;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
+BOOST_AUTO_TEST_CASE(step_paired_ilu_temp_write_redirected_to_r1) {
+  // MOV R2.x, v0 + MOV R2.y, v0
+  // Hardware redirects temporary register writes from the ILU to R1 when a MAC
+  // operation is paired, while the MAC writes to the encoded register.
+  static constexpr uint32_t kTest[][4] = {
+      {0x00000000, 0x0220001B, 0x0836006C, 0x28240000},
+  };
+
+  Nv2aVshStep expected;
+  clear_step(&expected);
+
+  expected.mac.opcode = NV2AOP_MOV;
+  expected.mac.outputs[0].type = NV2ART_TEMPORARY;
+  expected.mac.outputs[0].index = 2;
+  expected.mac.outputs[0].writemask = NV2AWM_X;
+  expected.mac.inputs[0].type = NV2ART_INPUT;
+  expected.mac.inputs[0].index = 0;
+
+  expected.ilu.opcode = NV2AOP_MOV;
+  expected.ilu.outputs[0].type = NV2ART_TEMPORARY;
+  expected.ilu.outputs[0].index = 1;
+  expected.ilu.outputs[0].writemask = NV2AWM_Y;
+
+  expected.ilu.inputs[0].type = NV2ART_INPUT;
+  expected.ilu.inputs[0].index = 0;
+
+  Nv2aVshStep actual;
+  auto result = nv2a_vsh_parse_step(&actual, kTest[0]);
+
+  BOOST_TEST(result == NV2AVPR_SUCCESS);
+  check_result(expected, actual);
+}
+
 BOOST_AUTO_TEST_CASE(step_multi_output) {
   // DP4 oPos.z, R6, c[98] + DP4 R0.x, R6, c[98]
   static constexpr uint32_t kTest[][4] = {

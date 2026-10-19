@@ -272,7 +272,11 @@ static Nv2aVshParseResult parse_outputs(Nv2aVshStep* out,
   uint32_t temp_writemask_mac = parse_temp_writemask_mac(token);
   uint32_t temp_writemask_ilu = parse_temp_writemask_ilu(token);
 
-  if (temp_writemask_mac) {
+  // Paired MAC instructions that write to R1 are discarded by the hardware.
+  // See
+  // https://github.com/abaire/nxdk_vsh_tests/blob/a8a19bb1a56f2c475cf942e480716d14bbdf15fe/src/shaders/paired_ilu_non_r1_temp_out.vsh
+  if (temp_writemask_mac &&
+      !(out_temp_register == 1 && out->ilu.opcode != NV2AOP_NOP)) {
     out->mac.outputs[0].type = NV2ART_TEMPORARY;
     out->mac.outputs[0].index = out_temp_register;
     out->mac.outputs[0].writemask = temp_writemask_mac;
