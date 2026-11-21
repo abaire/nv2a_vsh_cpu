@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 
 project(nv2a_vsh_cpu)
 
@@ -136,4 +136,24 @@ target_link_libraries(
 )
 add_test(NAME emulator_tests COMMAND emulator_tests)
 add_dependencies(emulator_tests nv2a_vsh_emulator)
+
+add_executable(
+        exceptional_value_tests
+        test/exceptional_values/test_main.cpp
+        test/exceptional_values/test_exceptional_values.cpp
+        test/exceptional_values/expectations.h
+)
+target_include_directories(
+        exceptional_value_tests
+        PRIVATE src
+        PRIVATE test
+)
+target_link_libraries(
+        exceptional_value_tests
+        LINK_PRIVATE
+        nv2a_vsh_emulator
+        ${Boost_LIBRARIES}
+)
+add_test(NAME exceptional_value_tests COMMAND exceptional_value_tests)
+add_dependencies(exceptional_value_tests nv2a_vsh_emulator)
 endif()

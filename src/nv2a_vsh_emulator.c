@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <string.h>
 
+static const int32_t kNumContextRegisters = 192;
+
 // clang format off
 static Nv2aVshCpuFunc kDispatchTable[] = {
     NULL,
@@ -28,13 +30,18 @@ static Nv2aVshCpuFunc kDispatchTable[] = {
 };
 // clang format on
 
+// Copies bit patterns so that NaN payloads are preserved. Negation only flips
+// the sign bit, as it does on hardware.
 static inline void set_register(float* out, const float* in,
                                 const uint8_t* swizzle, bool negate) {
-  float mult = negate ? -1.0f : 1.0f;
-  out[0] = mult * in[swizzle[0]];
-  out[1] = mult * in[swizzle[1]];
-  out[2] = mult * in[swizzle[2]];
-  out[3] = mult * in[swizzle[3]];
+  uint32_t sign = negate ? 0x80000000u : 0;
+  const uint8_t* end = swizzle + 4;
+  for (; swizzle != end; ++swizzle, ++out) {
+    uint32_t bits;
+    memcpy(&bits, in + *swizzle, sizeof(bits));
+    bits ^= sign;
+    memcpy(out, &bits, sizeof(bits));
+  }
 }
 
 static inline void fetch_value(float* out, const Nv2aVshExecutionState* state,
@@ -60,10 +67,17 @@ static inline void fetch_value(float* out, const Nv2aVshExecutionState* state,
     case NV2ART_CONTEXT: {
       int64_t offset = input->index;
       if (input->is_relative) {
-        offset += (int64_t)state->address_reg[0];
+        float address = state->address_reg[0];
+        // Also rejects NaN, which cannot be safely converted to an integer.
+        if (address >= -kNumContextRegisters &&
+            address < kNumContextRegisters) {
+          offset += (int64_t)address;
+        } else {
+          offset = -1;
+        }
       }
       // Reads outside of the constant file return zero on hardware.
-      if (offset < 0 || offset >= 192) {
+      if (offset < 0 || offset >= kNumContextRegisters) {
         static const float kZero[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         in = kZero;
       } else {
